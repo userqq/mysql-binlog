@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<psalm phpVersion="8.1">
+    <projectFiles>
+        <directory name="src" />
+    </projectFiles>
+    <stubs>
+        <file name="stubs/FFI.php" preloadClasses="true" />
+    </stubs>
+</psalm>

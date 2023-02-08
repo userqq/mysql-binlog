@@ -1,0 +1,155 @@
+#!/usr/local/bin/php
+<?php declare(strict_types=1);
+
+require __DIR__ . '/../vendor/autoload.php';
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
+use Amp\ByteStream;
+use Amp\DeferredCancellation;
+use Amp\Log\ConsoleFormatter;
+use Amp\Log\StreamHandler;
+use Monolog\ErrorHandler;
+use Monolog\Logger;
+use Monolog\Level;
+use Revolt\EventLoop;
+use UserQQ\MySQL\Binlog\Config;
+use UserQQ\MySQL\Binlog\EventsIterator;
+use function Amp\trapSignal;
+
+$config = Config::fromEnv();
+
+$cancellation = new DeferredCancellation();
+$logger = new Logger('event-stream', [
+    (new StreamHandler(ByteStream\getStderr(), $config->logLevel))
+        ->setFormatter(new ConsoleFormatter(ConsoleFormatter::DEFAULT_FORMAT, 'H:i:s.u'))
+]);
+
+ErrorHandler::register($logger);
+EventLoop::setErrorHandler(function (Throwable $t) use ($logger, $cancellation): void {
+    $logger->emergency($t);
+    $cancellation->cancel($t);
+});
+
+$eventStream = new EventsIterator($config, $logger, $cancellation);
+
+$currentPosition = null;
+EventLoop::queue(function () use ($eventStream, &$currentPosition): void {
+    foreach ($eventStream as $position => $event) {
+        echo json_encode($event);
+        $currentPosition = $position;
+    }
+});
+
+$signal = trapSignal([
+    SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGABRT, SIGBUS, SIGFPE, SIGUSR1, SIGSEGV, SIGUSR2, SIGPIPE, SIGALRM, SIGTERM, SIGSTKFLT, SIGCLD, SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, SIGXCPU, SIGXFSZ, SIGVTALRM, SIGPROF, SIGPOLL, SIGIO, SIGPWR, SIGSYS
+], true, $cancellation->getCancellation());
+$logger->info(sprintf('Received signal %d, stopping event queue', $signal));
+$this->logger->info(sprintf('Stopped at position %s', json_encode($currentPosition)));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+__halt_compiler();
+
+
+
+// SPX_AUTO_START=0 SPX_FP_LIMIT=30 SPX_FP_FOCUS=zm SPX_METRICS=wt,ct,zm,zmac,zmab SPX_BUILTINS=1 SPX_ENABLED=1 php -dopcache.jit=0 bin/run
+
+/**
+ * !TODO: float, text encoding
+ */
+
+
+
+// $pdo = new PDO('mysql:dbname=app_system;host=127.0.0.1;port=58336', 'root', 'toor');
+
+    /*
+        echo sprintf('`%s`.`%s` %s', $event->tableMap->schema, $event->tableMap->table, json_encode($position)) . PHP_EOL;
+        // var_dump($event->tableMap);
+        // if (!count($event->tableMap->primaryKeyColumns ?? [])) {
+            // exit('No PK' . PHP_EOL);
+        // }
+
+        foreach ($event->rows as $row) {
+            $pkValues = [];
+            if (count($event->tableMap->primaryKeyColumns ?? [])) {
+                foreach ($event->tableMap->primaryKeyColumns as $pkColumn) {
+                    $pkValues[$pkColumn->name] = $row[$pkColumn->name];
+                }
+            } else {
+                $pkValues = $row;
+            }
+
+            try {
+            $data = $pdo->query($query = sprintf(
+                'SELECT * FROM `%s`.`%s` WHERE %s LIMIT 1',
+                $event->tableMap->schema,
+                $event->tableMap->table,
+                implode(', ', array_map(fn ($key, $value) => "`{$key}` = " . (is_string($value) ? $pdo->quote($value) : $value), array_keys($pkValues), $pkValues)),
+            ))->fetch(PDO::FETCH_ASSOC);
+            } catch (\Throwable $t) {
+                var_dump($query);
+                exit())
+            }
+
+            foreach (array_merge($row, $data) as $key => $_) {
+                if ($data[$key] !== $row[$key]) {
+                    var_dump($row);
+                    var_dump($data);
+                    var_dump($key);
+                    var_dump($row[$key]);
+                    var_dump($data[$key]);
+                    // continue;
+                    exit('Data differs!' . PHP_EOL);
+                }
+            }
+        }
+ */
+        // $current = json_encode($event->rows[0], JSON_THROW_ON_ERROR| JSON_PRETTY_PRINT);
+
+
+
+    // (new Config())
+        // ->withUser('root')
+        // ->withPassword('toor')
+        // ->withHost('127.0.0.1')
+        // ->withPort(58336)
+        // ->withDatabases(['app_system'])
+        // ->withHeartbeatPeriod(1.0)
+        // ->withBinlogFile('mysql-bin.000129')
+        // ->withBinlogFile('mysql-bin.000128')
+        // ->withBinlogPosition(256)
+        /*
+
+        */

@@ -9,16 +9,21 @@
         "changedatacapture",
         "replication",
         "binlog",
+        "binlog2json",
         "events",
         "php",
         "mysql",
         "mariadb",
         "mysql replication",
-        "mysql binlog",
         "mysql replication protocol",
+        "mysql replication listener",
+        "mysql binlog",
+        "mysql binlog events",
         "mariadb replication",
+        "mariadb replication protocol",
+        "mariadb replication listener",
         "mariadb binlog",
-        "mariadb replication protocol"
+        "mariadb binlog events"
     ],
     "config": {
         "platform": {

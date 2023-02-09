@@ -197,9 +197,6 @@ class EventsIterator implements IteratorAggregate
                     default:
                         /** @psalm-suppress TypeDoesNotContainType */
                         assert(null !== $event);
-                        if (null === $event) {
-                            return null;
-                        }
                 }
 
                 assert($buffer->getLeft() === $header->checksumSize);
@@ -208,6 +205,10 @@ class EventsIterator implements IteratorAggregate
                 $this->statisticsCollector->pushEvent($event);
                 $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
                 return null;
+        }
+
+        if (null === $event) {
+            return null;
         }
 
         assert($buffer->getLeft() === $header->checksumSize);

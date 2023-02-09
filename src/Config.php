@@ -1,11 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog;
 
+use ValueError;
 use Monolog\Level;
 use UserQQ\MySQL\Binlog\Protocol\Collation;
-
-use ValueError;
 
 final class Config
 {
@@ -92,22 +93,21 @@ final class Config
     public readonly Level     $logLevel;
 
     public function __construct(
-        public readonly string         $user               = self::DEFAULT_MYSQL_USER,
-        public readonly string         $password           = self::DEFAULT_MYSQL_PASSWORD,
-        public readonly string         $host               = self::DEFAULT_MYSQL_HOST,
-        public readonly int            $port               = self::DEFAULT_MYSQL_PORT,
-        public readonly int            $slaveId            = self::DEFAULT_MYSQL_SLAVE_ID,
-        public readonly float          $heartbeatPeriod    = 1.0,
-        public readonly ?float         $statisticsInterval = 1.0,
-        public readonly ?string        $binlogFile         = null,
-        public readonly ?int           $binlogPosition     = null,
-        public readonly ?array         $tables             = null,
-        public readonly ?array         $excludeTables       = null,
-        public readonly ?array         $databases          = null,
-        public readonly ?array         $excludeDatabases   = null,
-
-                        string|Collation $collation        = self::DEFAULT_MYSQL_COLLATION,
-                        string|Level     $logLevel         = self::DEFAULT_LOG_LEVEL,
+        public readonly string           $user               = self::DEFAULT_MYSQL_USER,
+        public readonly string           $password           = self::DEFAULT_MYSQL_PASSWORD,
+        public readonly string           $host               = self::DEFAULT_MYSQL_HOST,
+        public readonly int              $port               = self::DEFAULT_MYSQL_PORT,
+        public readonly int              $slaveId            = self::DEFAULT_MYSQL_SLAVE_ID,
+        public readonly float            $heartbeatPeriod    = 1.0,
+        public readonly ?float           $statisticsInterval = 1.0,
+        public readonly ?string          $binlogFile         = null,
+        public readonly ?int             $binlogPosition     = null,
+        public readonly ?array           $tables             = null,
+        public readonly ?array           $excludeTables      = null,
+        public readonly ?array           $databases          = null,
+        public readonly ?array           $excludeDatabases   = null,
+                        string|Collation $collation          = self::DEFAULT_MYSQL_COLLATION,
+                        string|Level     $logLevel           = self::DEFAULT_LOG_LEVEL,
     ) {
         $this->collation = !is_string($collation)
             ? $collation
@@ -155,7 +155,7 @@ final class Config
                     ]])
             )) ?: throw new ValueError(sprintf(
                 'Only U+0001 .. U+007F and U+0080 .. U+FFFF characters in "{schema}.{table}" format are allowed in "tables", got %s',
-                implode(', ', array_map(fn ($name): string => var_export($name, true), $errorNames)),
+                implode(', ', array_map(fn (mixed $name): string => var_export($name, true), $errorNames)),
             ));
 
         null === $this->excludeTables
@@ -167,7 +167,7 @@ final class Config
                     ]])
             )) ?: throw new ValueError(sprintf(
                 'Only U+0001 .. U+007F and U+0080 .. U+FFFF characters in "{schema}.{table}" format are allowed in "excludeTables", got %s',
-                implode(', ', array_map(fn ($name): string => var_export($name, true), $errorNames)),
+                implode(', ', array_map(fn (mixed $name): string => var_export($name, true), $errorNames)),
             ));
 
         null === $this->databases
@@ -179,7 +179,7 @@ final class Config
                     ]])
             )) ?: throw new ValueError(sprintf(
                 'Only U+0001 .. U+007F and U+0080 .. U+FFFF characters in "{schema}" format are allowed in "databases", got %s',
-                implode(', ', array_map(fn ($name): string => var_export($name, true), $errorNames)),
+                implode(', ', array_map(fn (mixed $name): string => var_export($name, true), $errorNames)),
             ));
 
         null === $this->excludeDatabases
@@ -191,7 +191,7 @@ final class Config
                     ]])
             )) ?: throw new ValueError(sprintf(
                 'Only U+0001 .. U+007F and U+0080 .. U+FFFF characters in "{schema}" format are allowed in "excludeDatabases", got %s',
-                implode(', ', array_map(fn ($name): string => var_export($name, true), $errorNames)),
+                implode(', ', array_map(fn (mixed $name): string => var_export($name, true), $errorNames)),
             ));
 
         null === $this->heartbeatPeriod

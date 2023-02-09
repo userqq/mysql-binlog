@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection;
 
@@ -11,9 +13,13 @@ use Amp\Socket\Socket;
 use Psr\Log\LoggerInterface;
 use UserQQ\MySQL\Binlog\Config;
 use UserQQ\MySQL\Binlog\Protocol\ColumnType;
+
 use function Amp\async;
 use function Amp\Socket\connect;
 
+/**
+ * @template-implements IteratorAggregate<Buffer>
+ */
 final class Connection implements IteratorAggregate
 {
     private const SOCKET_BUFFER_SIZE = 65536;
@@ -27,19 +33,21 @@ final class Connection implements IteratorAggregate
 
     private readonly Socket         $socket;
     private readonly BufferedReader $reader;
-
+    private          ServerInfo     $serverInfo;
     private          int            $seqId = -1;
-
     private readonly string         $binlogFile;
+    private readonly int            $binlogPosition;
 
     public function __construct(
         private readonly Config          $config,
         private readonly LoggerInterface $logger,
     ) {
-        $this->socket ??= connect(sprintf('tcp://%s:%d', $this->config->host, $this->config->port));
-        $this->socket->setChunkSize(65536);
-        $this->reader ??= new BufferedReader($this->socket);
+        $this->socket = connect(sprintf('tcp://%s:%d', $this->config->host, $this->config->port));
+        if (method_exists($this->socket, 'setChunkSize')) {
+            $this->socket->setChunkSize(65536);
+        }
 
+        $this->reader = new BufferedReader($this->socket);
         $this->logger->debug('Connection established, starting handshake phase');
 
         $this->handleHandshake($this->readPacket());
@@ -48,20 +56,18 @@ final class Connection implements IteratorAggregate
             $this->serverInfo->serverVersion,
             $this->serverInfo->protocolVersion,
             $this->serverInfo->connectionId,
-            $this->serverInfo->authPluginName,
+            $this->serverInfo->authPluginName ?? 'NONE',
         ));
 
         $this->execute(sprintf('SET NAMES "%s" COLLATE "%s"', $this->config->collation->getCharset(), $this->config->collation->toString()));
-
         $this->validateServerConfiguration();
-
         $this->logger->info(sprintf('Master status is %s', json_encode($this->execute('SHOW MASTER STATUS'))));
 
         $this->binlogFile = $this->selectBinlogFile();
         $this->binlogPosition = $this->selectBinlogPosition();
         $this->logger->info(sprintf('Selected binlog file is %s:%d', $this->binlogFile, $this->binlogPosition));
 
-        if ('NONE' !== $this->execute('SELECT @@global.binlog_checksum AS value')[0]) {
+        if ('NONE' !== $this->query('SELECT @@global.binlog_checksum AS value')[0]) {
             $this->execute('SET @master_binlog_checksum = @@global.binlog_checksum');
         }
 
@@ -80,22 +86,22 @@ final class Connection implements IteratorAggregate
 
     private function validateServerConfiguration(): void
     {
-        if ('ROW' !== ($this->execute('SELECT @@global.binlog_format AS value')[0]['value'])) {
+        if ('ROW' !== ($this->query('SELECT @@global.binlog_format AS value')[0]['value'])) {
             throw new \RuntimeException('Expected to have binlog_format=ROW');
         }
 
-        if ('FULL' !== ($this->execute('SELECT @@global.binlog_row_image AS value')[0]['value'])) {
+        if ('FULL' !== ($this->query('SELECT @@global.binlog_row_image AS value')[0]['value'])) {
             throw new \RuntimeException('Expected to have binlog_row_image=FULL');
         }
 
-        if ('FULL' !== ($this->execute('SELECT @@global.binlog_row_metadata AS value')[0]['value'])) {
+        if ('FULL' !== ($this->query('SELECT @@global.binlog_row_metadata AS value')[0]['value'])) {
             throw new \RuntimeException('Expected to have binlog_row_metadata=FULL');
         }
     }
 
     private function selectBinlogFile(): string
     {
-        $binlogFiles = array_column($this->execute('SHOW BINARY LOGS'), 'File_size', 'Log_name');
+        $binlogFiles = array_column($this->query('SHOW BINARY LOGS'), 'File_size', 'Log_name');
         ksort($binlogFiles, SORT_NATURAL);
 
         if ($this->config->binlogFile) {
@@ -108,6 +114,12 @@ final class Connection implements IteratorAggregate
                 ));
             }
             return $this->config->binlogFile;
+        } elseif (!count($binlogFiles)) {
+            throw new \UnexpectedValueException(sprintf(
+                'No binlog files were found on server %s:%s',
+                $this->config->host,
+                $this->config->port,
+            ));
         } else {
             return array_key_first($binlogFiles);
         }
@@ -189,7 +201,7 @@ final class Connection implements IteratorAggregate
         }
     }
 
-    public function execute(string $query): bool|int|array
+    private function execute(string $query): bool|int|array
     {
         $this->seqId = -1;
         $this->sendPacket((new Buffer("\x03"))->write($query));
@@ -294,15 +306,22 @@ final class Connection implements IteratorAggregate
         return $result;
     }
 
+    private function query(string $query): array
+    {
+        return !is_array($result = $this->execute($query))
+            ? []
+            : $result;
+    }
+
     private function handleHandshake(Buffer $buffer): void
     {
+        /** @psalm-suppress TooFewArguments */
         $this->serverInfo = new ServerInfo(
             $buffer->readUInt8(),
             $buffer->readUntill("\0"),
             $buffer->readUint32(),
             ...(function () use ($buffer) {
-                $ret[] = $buffer->read(8);
-                $ret[] = $serverCapabilities = $buffer->skip(1)->readUint16();
+                $ret = [$buffer->read(8), $serverCapabilities = $buffer->skip(1)->readUint16()];
 
                 if ($buffer->getLeft() > 0) {
                     $ret[] = $buffer->readUInt8();
@@ -310,7 +329,7 @@ final class Connection implements IteratorAggregate
 
                     $ret[1] = $serverCapabilities += $buffer->readUInt16() << 16;
 
-                    $authPluginDataLen = Capability::PLUGIN_AUTH->in($serverCapabilities) ? $buffer->readUInt8() : (int)!(bool)$buffer->skip(1);
+                    $authPluginDataLen = Capability::PLUGIN_AUTH->in($serverCapabilities) ? $buffer->readUInt8() : (int) !(bool) $buffer->skip(1);
                     if (Capability::SECURE_CONNECTION->in($serverCapabilities)) {
                         $ret[0] .= $buffer->skip(10)->read(max(13, $authPluginDataLen - 8));
                         if (Capability::PLUGIN_AUTH->in($serverCapabilities)) {
@@ -361,6 +380,7 @@ final class Connection implements IteratorAggregate
     {
         $data = '';
         $header = $this->reader->readLength(4);
+        /** @var int<1, max> $length */
         $length = \ord($header[0]) | (\ord($header[1]) << 8) | (\ord($header[2]) << 16);
         $this->seqId = \ord($header[3]);
 
@@ -423,11 +443,11 @@ final class Connection implements IteratorAggregate
 
     public function __destruct()
     {
-        if (isset($this->socket) && !$this->socket?->isClosed()) {
+        if (!$this->socket->isClosed()) {
             try {
                 $this->sendPacket(new Buffer("\x01"));
             } finally {
-                $this->socket?->close();
+                $this->socket->close();
             }
         }
     }

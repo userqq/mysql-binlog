@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection;
 
@@ -8,7 +10,7 @@ enum Capability: int
      * Use the improved version of Old Password Authentication.
      */
     case LONG_PASSWORD = 0x00000001;
- 	
+
     /**
      * Send found rows instead of affected rows in EOF_Packet.
      */

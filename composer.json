@@ -26,6 +26,7 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^1.1",
-        "psalm/phar": "dev-master"
+        "psalm/phar": "dev-master",
+        "squizlabs/php_codesniffer": "^3"
     }
 }

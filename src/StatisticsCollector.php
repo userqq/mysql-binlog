@@ -1,9 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog;
 
 use Psr\Log\LoggerInterface;
 use UserQQ\MySQL\Binlog\Protocol\Event\Event;
+use UserQQ\MySQL\Binlog\Protocol\Event\Events;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 
@@ -24,7 +27,7 @@ class StatisticsCollector
         $this->reset();
     }
 
-    private function reset()
+    private function reset(): void
     {
         $this->events = 0;
         $this->bytes = 0;
@@ -39,7 +42,7 @@ class StatisticsCollector
         $base = log($bytes, 1024);
         return 0 === $bytes
             ? '0.00b '
-            : number_format(round(pow(1024, $base - floor($base)), $precision), 2) . ['b ', 'KB', 'MB', 'GB', 'TB'][floor($base)];
+            : number_format(round(pow(1024, $base - floor($base)), $precision), 2) . ['b ', 'KB', 'MB', 'GB', 'TB'][(int) floor($base)];
     }
 
     public function flush(): void
@@ -64,6 +67,9 @@ class StatisticsCollector
         $this->bytes += ($header->payloadSize + $header->checksumSize);
     }
 
+    /**
+     * @param Events\TableMap|Events\Rotate|Events\Xid|Events\Query|Events\FormatDescription|Events\UpdateRows|Events\WriteRows|Events\DeleteRows $event
+     */
     public function pushEvent(Event $event): void
     {
         ++$this->events;
@@ -71,6 +77,9 @@ class StatisticsCollector
         $this->pushHeader($event->header);
     }
 
+    /**
+     * @param Events\UpdateRows|Events\WriteRows|Events\DeleteRows $event
+     */
     public function pushRowEvent(RowEvent $event): void
     {
         $this->rows += $event->count;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace UserQQ\MySQL\Binlog\Protocol;
 
 use JsonSerializable;
@@ -981,7 +983,7 @@ enum Collation: int implements JsonSerializable
 
     public function getCharset(): string
     {
-        return static::CHARSETS[$this->value];        
+        return static::CHARSETS[$this->value];
     }
 
     public static function fromString(string $name): static
@@ -992,7 +994,7 @@ enum Collation: int implements JsonSerializable
 
     public static function tryFromString(string $name): ?static
     {
-        return $found = array_search($name, static::CASES, true)
+        return (false !== $found = array_search($name, static::CASES, true))
             ? static::from($found)
             : null;
     }

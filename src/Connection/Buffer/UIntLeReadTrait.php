@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection\Buffer;
 
@@ -12,9 +14,6 @@ trait UIntLeReadTrait
      */
     public function readUInt8(): int
     {
-        if (!isset($this->data[$this->offset])) {
-            debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        }
         $value = \ord($this->data[$this->offset]);
         ++$this->offset;
 
@@ -133,6 +132,7 @@ trait UIntLeReadTrait
 
         if ($value < 0) {
             $this->offset -= 8;
+            /** @psalm-suppress UndefinedConstant */
             $value = gmp_strval(gmp_import(substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN));
             $this->offset += 8;
         }

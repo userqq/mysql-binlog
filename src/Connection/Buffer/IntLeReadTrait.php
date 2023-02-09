@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection\Buffer;
 
@@ -68,7 +70,8 @@ trait IntLeReadTrait
      */
     public function readInt64(): string
     {
-        $value = gmp_import($str = substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN);
+        /** @psalm-suppress UndefinedConstant */
+        $value = gmp_import($str = substr($this->data, $this->offset, 8), 1, \GMP_LSW_FIRST | \GMP_LITTLE_ENDIAN);
         $value = \ord($this->data[$this->offset + 7]) & 0x80
             ? $value - gmp_init('0x10000000000000000')
             : $value;

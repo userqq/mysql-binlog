@@ -1,7 +1,10 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Deserializer;
 
+use UnexpectedValueException;
 use UserQQ\MySQL\Binlog\Connection\Buffer;
 use UserQQ\MySQL\Binlog\Protocol\ColumnType;
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap;
@@ -36,6 +39,7 @@ class RowFactory
 
         $rows = [];
         for ($j = 0; $header->payloadSize > $buffer->getOffset(); ++$j) {
+            /** @psalm-suppress EmptyArrayAccess */
             $row = &$rows[$j];
             $bitmap = $columnsBitmap;
             $nullBitmapLengthCurrent = $nullBitmapLength;
@@ -116,7 +120,7 @@ class RowFactory
                                 break;
 
                             default:
-                                var_dump($column);
+                                throw new UnexpectedValueException(sprintf('Got column with unexpected data type %s', var_export($column, true)));
                                 exit();
                         }
                     }
@@ -127,6 +131,7 @@ class RowFactory
                 if ($columnsBitmapAfter && 1 === count($rows[$j])) {
                     $row = &$rows[$j]['after'];
                     $bitmap = $columnsBitmapAfter;
+                    /** @psalm-suppress PossiblyUndefinedVariable */
                     $nullBitmapLengthCurrent = $nullBitmapLengthAfter;
                     goto repeat;
                 }

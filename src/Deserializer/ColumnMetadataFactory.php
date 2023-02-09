@@ -1,7 +1,13 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Deserializer;
 
+use LengthException;
+use OutOfBoundsException;
+use RuntimeException;
+use UnexpectedValueException;
 use UserQQ\MySQL\Binlog\Connection\Buffer;
 use UserQQ\MySQL\Binlog\Protocol\Collation;
 use UserQQ\MySQL\Binlog\Protocol\ColumnType;
@@ -63,7 +69,7 @@ class ColumnMetadataFactory
                     $bytes = $buffer->readUInt8();
 
                     $bits = ($bytes * 8) + $bits;
-                    $bytes = (int)(($bits + 7) / 8);
+                    $bytes = (int) (($bits + 7) / 8);
                     $columns[$i] = new Meta\BitMeta($type, $bytes, $bits);
                     break;
 
@@ -78,6 +84,8 @@ class ColumnMetadataFactory
 
     /**
      * See https://github.com/kogel-net/Kogel.Subscribe/blob/ce494592665d695a3cef09936e997e621228a76e/Kogel.Slave.Mysql/Events/TableMapEvent.cs
+     *
+     * @param array<int, Meta\SizedMeta|Meta\TimeMeta|Meta\TextMeta|Meta\DecimalMeta|Meta\BlobMeta|Meta\BitMeta|Meta\CommonMeta> $columns
      */
     public function readOptionalMetadata(Buffer $buffer, Header $header, int $columnCount, array $columns): array
     {
@@ -85,7 +93,7 @@ class ColumnMetadataFactory
         while ($header->payloadSize > $buffer->getOffset()) {
             $type = OptionalMetadataType::from($buffer->readUint8());
             $length = $buffer->readCodedBinary();
-            $sub = $buffer->slice($length);
+            $sub = $buffer->slice($length ?? throw new LengthException('Expected to have non-empty length of optional metadata'));
 
             switch ($type) {
                 case OptionalMetadataType::SIGNEDNESS:
@@ -97,9 +105,15 @@ class ColumnMetadataFactory
                  */
                 case OptionalMetadataType::DEFAULT_CHARSET:
                 case OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET:
-                    $metadata[$type->value] = ['defaultCharsetCollation' => Collation::from($sub->readCodedBinary())];
+                    $metadata[$type->value] = ['defaultCharsetCollation' => Collation::from(
+                        $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have collation length, nut got NULL')
+                    )];
                     while ($sub->getLeft()) {
-                        $metadata[$type->value]['charsetCollations'][$sub->readCodedBinary()] = Collation::from($sub->readCodedBinary());
+                        $metadata[$type->value]['charsetCollations'][
+                            $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have column id, nut got NULL')
+                        ] = Collation::from(
+                            $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have collation id, nut got NULL')
+                        );
                     }
                     break;
 
@@ -128,12 +142,12 @@ class ColumnMetadataFactory
                     break;
 
                 default:
-                    throw new \UnexpectedValueException(sprintf('Unknown optional medatada type %d', $type->value));
+                    throw new UnexpectedValueException(sprintf('Unknown optional medatada type %d', $type->value));
             }
         }
 
         if (!isset($metadata[OptionalMetadataType::COLUMN_NAME->value])) {
-            throw new \RuntimeExeption('Columns names was not found in TABLE_MAP event, please make sure binlog_row_metadata=FULL option is set');
+            throw new RuntimeException('Columns names was not found in TABLE_MAP event, please make sure binlog_row_metadata=FULL option is set');
         }
 
         $integerColumn = 0;
@@ -147,33 +161,44 @@ class ColumnMetadataFactory
                 case ColumnType::LONG:
                 case ColumnType::LONGLONG:
                     $bitmap = $metadata[OptionalMetadataType::SIGNEDNESS->value];
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
                     $columns[$i] = new Column\IntegerColumn(
                         $i,
                         $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i],
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         !(\ord($bitmap[$integerColumn >> 3]) & (1 << (7 - ($integerColumn & 0x07))))
                     );
                     ++$integerColumn;
                     break;
+
                 case ColumnType::FLOAT:
                 case ColumnType::DOUBLE:
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
                     $columns[$i] = new Column\FloatColumn(
                         $i,
                         $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i],
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
                     break;
 
                 case ColumnType::VARCHAR:
                 case ColumnType::STRING:
-                    // TODO: check COLUMN_CHARSET, then DEFAULT_CHARSET
-                    // TODO: DEFAULT_CHARSET['charsetCollations'] ?!
+                    /**
+                     * TODO: check COLUMN_CHARSET, then DEFAULT_CHARSET
+                     * TODO: DEFAULT_CHARSET['charsetCollations'] ?!
+                     *
+                     * @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument
+                     */
                     $columns[$i] = new Column\TextColumn(
                         $i,
                         $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i],
-                        $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]['defaultCharsetCollation'],
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]['defaultCharsetCollation']
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
                     );
                     break;
 
@@ -181,45 +206,53 @@ class ColumnMetadataFactory
                 case ColumnType::DATE:
                 case ColumnType::DATETIME2:
                 case ColumnType::TIMESTAMP2:
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
                     $columns[$i] = new Column\TimeColumn(
                         $i,
                         $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i],
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
 
                 case ColumnType::BLOB:
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
                     $columns[$i] = new Column\BlobColumn(
                         $i,
                         $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i],
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
 
                 case ColumnType::ENUM:
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
                     $columns[$i] = new Column\EnumColumn(
                         $i,
                         $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i],
-                        $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]['defaultCharsetCollation'],
-                        $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumColumn],
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]['defaultCharsetCollation']
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumColumn]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have enum value index %d, but got nothing', $i)),
                     );
                     ++$enumColumn;
                     break;
 
+                // TODO:! PRIMARY_KEY_WITH_PREFIX
+                // TODO:! use names of collations instead of ids
                 default:
-                    throw new \UnexpectedValueException(sprintf('Unknown column type %s', var_export($column->type, true)));
+                    throw new UnexpectedValueException(sprintf('Unknown column type %s', var_export($column->type, true)));
             }
         }
 
-        // TODO:! PRIMARY_KEY_WITH_PREFIX
-        // TODO:! use names of collations instead of ids
+        /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
         return [
             $columns,
-            array_map(
-                fn (int $columnIndex) => $columns[$columnIndex],
-                $metadata[OptionalMetadataType::SIMPLE_PRIMARY_KEY->value] ?? []
-            ) ?: null,
+            isset($metadata[OptionalMetadataType::SIMPLE_PRIMARY_KEY->value])
+                ? array_map(fn (int $columnIndex) => $columns[$columnIndex], $metadata[OptionalMetadataType::SIMPLE_PRIMARY_KEY->value])
+                : null,
         ];
     }
 }

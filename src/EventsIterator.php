@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog;
 
@@ -21,6 +23,9 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 use UserQQ\MySQL\Binlog\Protocol\Event\Type;
 
+/**
+ * @template-implements IteratorAggregate<Events\WriteRows|Events\UpdateRows|Events\DeleteRows>
+ */
 class EventsIterator implements IteratorAggregate
 {
     private readonly Connection                $connection;
@@ -39,9 +44,9 @@ class EventsIterator implements IteratorAggregate
     private readonly bool                      $check;
 
     public function __construct(
-        private readonly Config               $config       = new Config,
-        private readonly LoggerInterface      $logger       = new NullLogger,
-        private readonly DeferredCancellation $cancellation,
+        private readonly Config                $config       = new Config,
+        private readonly LoggerInterface       $logger       = new NullLogger,
+        private readonly ?DeferredCancellation $cancellation = null,
     ) {
         $this->connection = new Connection($config, $logger);
         $this->columnsMetadataFactory = new ColumnMetadataFactory();
@@ -55,10 +60,10 @@ class EventsIterator implements IteratorAggregate
             EventLoop::unreference(EventLoop::repeat($this->config->statisticsInterval, $this->statisticsCollector->flush(...)));
         }
 
-        $this->include = ($config->tables && count($config->tables))
-            || ($config->databases && count ($config->databases));
-        $this->exclude = ($config->excludeTables && count($config->excludeTables))
-            || ($config->excludeDatabases && count ($config->excludeDatabases));
+        $this->include = (null !== $config->tables && count($config->tables))
+            || (null !== $config->databases && count($config->databases));
+        $this->exclude = (null !== $config->excludeTables && count($config->excludeTables))
+            || (null !== $config->excludeDatabases && count($config->excludeDatabases));
         $this->check = $this->include || $this->exclude;
     }
 
@@ -69,12 +74,12 @@ class EventsIterator implements IteratorAggregate
                 yield $this->position => $event;
             }
 
-            if ($this->cancellation->isCancelled()) {
+            if ($this->cancellation?->isCancelled()) {
                 break;
             }
         }
 
-        $this->logger->info(sprintf('End events queue', $signal));
+        $this->logger->info('End events queue');
     }
 
     private function check(Events\TableMap $tableMap): bool
@@ -109,6 +114,7 @@ class EventsIterator implements IteratorAggregate
     private function parse(Buffer $buffer): ?Event
     {
         $header = $this->readEventHeader($buffer);
+        $event = null;
 
         if (null === $this->formatDescription && $header->type !== Type::FORMAT_DESCRIPTION_EVENT) {
             throw new \UnexpectedValueException(sprintf('Expected to got FORMAT_DESCRIPTION_EVENT first, but got %s', var_export($header->type, true)));
@@ -136,6 +142,8 @@ class EventsIterator implements IteratorAggregate
                 $event = $this->readTableMapEvent($buffer, $header);
                 $this->tableMaps[$event->tableId] = $event;
                 $this->rowFactory->addTableMap($event);
+                $this->statisticsCollector->pushEvent($event);
+                $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
                 return null;
                 break;
             case Type::ROTATE_EVENT:
@@ -143,7 +151,7 @@ class EventsIterator implements IteratorAggregate
                 if ($this->position->filename !== $event->filename || $this->position->position !== $event->position) {
                     $this->logger->info(sprintf('[EVENT][ROTATE] %s:%d', $event->filename, $event->position));
                 }
-
+                $this->statisticsCollector->pushEvent($event);
                 $this->position = new BinlogPosition($event->filename, $event->position);
                 return null;
                 break;
@@ -178,14 +186,22 @@ class EventsIterator implements IteratorAggregate
             case Type::DELETE_ROWS_EVENTv2:
                 $event = $this->readDeleteRowsEventV2($buffer, $header);
                 break;
-
-            case Type::QUERY_EVENT:
-                $event ??= $this->readQueryEvent($buffer, $header);
-                // nobreak;
-            case Type::XID_EVENT:
-                $event ??= $this->readXidEvent($buffer, $header);
-                // nobreak;
             default:
+                switch ($header->type) {
+                    case Type::QUERY_EVENT:
+                        $event = $this->readQueryEvent($buffer, $header);
+                        break;
+                    case Type::XID_EVENT:
+                        $event = $this->readXidEvent($buffer, $header);
+                        break;
+                    default:
+                        /** @psalm-suppress TypeDoesNotContainType */
+                        assert(null !== $event);
+                        if (null === $event) {
+                            return null;
+                        }
+                }
+
                 assert($buffer->getLeft() === $header->checksumSize);
                 assert($header->checksumSize === 0 || strrev($buffer->read()) === hash('crc32b', substr((string) $buffer, 1, -1 * $header->checksumSize), true));
 
@@ -194,44 +210,44 @@ class EventsIterator implements IteratorAggregate
                 return null;
         }
 
-        if (null === $event) {
-            return null;
-        }
-
         assert($buffer->getLeft() === $header->checksumSize);
         assert($header->checksumSize === 0 || strrev($buffer->read()) === hash('crc32b', substr((string) $buffer, 1, -1 * $header->checksumSize), true));
 
+        /** @psalm-suppress PossiblyNullArgument */
         $this->statisticsCollector->pushRowEvent($event);
         $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
 
         return $event;
     }
 
+    /**
+     * Check binlog version
+     */
     private function readEventHeader(Buffer $buffer): Header
     {
-        /* TODO:! Check binlog version */
         return new Header(
             $this->position,
-            $buffer->readInt32(),              // uint<4> Timestamp (creation time)
-            Type::from($buffer->readUInt8()),  // uint<1> Event Type (type_code)
-            $buffer->readInt32(),              // uint<4> Server_id (server which created the event)
-            $eventSize = $buffer->readInt32(), // uint<4> Event Length (header + data)
-            $buffer->readInt32(),              // uint<4> Next Event position
-            $buffer->readUInt16(),             // uint<2> Event flags
+            $buffer->readInt32(),
+            Type::from($buffer->readUInt8()),
+            $buffer->readInt32(),
+            $eventSize = $buffer->readInt32(),
+            $buffer->readInt32(),
+            $buffer->readUInt16(),
             $checksumSize = ($this->formatDescription?->checksumAlgorithmType > 0) ? 4 : 0,
-            ($eventSize + 1 /* Packet type */) - $checksumSize,
+            ($eventSize + 1 /* Packet type header*/) - $checksumSize,
         );
     }
 
     private function readTableMapEvent(Buffer $buffer, Header $header): Events\TableMap
     {
-        $tableId = $buffer->readUInt48(); // uint<6> The table ID.
-        $reserved = $buffer->readUInt16(); // uint<2> Reserved for future use.
-        $schema = $buffer->read($buffer->readUInt8()); // uint<1> Database name length. // string<NUL> The database name (null-terminated).
-        $table = $buffer->read($buffer->skip(1)->readUInt8()); // uint<1> Table name length. // string<NUL> The table name (null-terminated).
-        $columnCount = $buffer->skip(1)->readCodedBinary(); // int<lenenc> The number of columns in the table.
+        $tableId = $buffer->readUInt48();
+        $reserved = $buffer->readUInt16();
+        $schema = $buffer->read($buffer->readUInt8());
+        $table = $buffer->read($buffer->skip(1)->readUInt8());
+        $columnCount = $buffer->skip(1)->readCodedBinary();
+        /** @psalm-suppress PossiblyNullArgument */
         $columns = $this->columnsMetadataFactory->readColumns($buffer, $columnCount);
-        $nullableBitField = $buffer->read(($columnCount + 7) >> 3); // byte<n> Bit-field indicating whether each column can be NULL, one bit per column.
+        $nullableBitField = $buffer->read(($columnCount + 7) >> 3);
         [$columns, $primaryKeyColumns] = $this->columnsMetadataFactory->readOptionalMetadata($buffer, $header, $columnCount, $columns);
 
         return new Events\TableMap(
@@ -273,7 +289,7 @@ class EventsIterator implements IteratorAggregate
             $schemaLength = $buffer->readUInt8(),
             $buffer->readUInt16(),
             $statusVarsLength = $buffer->readUInt16(),
-            $buffer->skip($statusVarsLength)->read($schemaLength), /* TODO!: parse status vars */
+            $buffer->skip($statusVarsLength)->read($schemaLength),
             $buffer->read($header->payloadSize - $buffer->getOffset()),
         );
     }
@@ -282,18 +298,12 @@ class EventsIterator implements IteratorAggregate
     {
         return new Events\FormatDescription(
             $header,
-            $buffer->readUInt16(),                // uint<2> The binary log format version. This is 4 in MariaDB 10 and up.
-            trim($buffer->read(50), "\x0"),       // string<50> The MariaDB server version (example: 10.2.1-debug-log), padded with 0x00 bytes on the right.
-            $buffer->readUInt32(),                // uint<4> Timestamp in seconds when this event was created (this is the moment when the binary log was created). This value is redundant; the same value occurs in the timestamp header field.
-            $headerLength = $buffer->readUInt8(), // uint<1> The header length. This length - 19 gives the size of the extra headers field at the end of the header for other events.
-            $buffer->read(                        // byte<n> Variable-sized. An array that indicates the post-header lengths for all event types.
-                $header->eventSize - $headerLength - (2 + 50 + 4 + 1) - 1 - 4
-            ),
-                                                  // There is one byte per event type that the server knows about.
-                                                  // The value 'n' comes from the following formula:
-                                                  // n = event_size - header length - offset (2 + 50 + 4 + 1) - checksum_algo - checksum
-            $buffer->readUInt8(),                 // uint<1> Checksum Algorithm Type
-            // uint<4> CRC32 4 bytes (value matters only if checksum algo is CRC32)
+            $buffer->readUInt16(),
+            trim($buffer->read(50), "\x0"),
+            $buffer->readUInt32(),
+            $headerLength = $buffer->readUInt8(),
+            $buffer->read($header->eventSize - $headerLength - (2 + 50 + 4 + 1) - 1 - 4),
+            $buffer->readUInt8(),
         );
     }
 
@@ -306,6 +316,7 @@ class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        /** @psalm-suppress PossiblyNullArgument */
         return new Events\UpdateRows(
             $header,
             $tableId,
@@ -328,12 +339,13 @@ class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        /** @psalm-suppress PossiblyNullArgument */
         return new Events\UpdateRows(
             $header,
             $tableId,
             $tableMap,
             $buffer->readUint16(),
-            $columnCount = $buffer->buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
+            $columnCount = $buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
             $columnsBitmapAfter = $buffer->read(($columnCount + 7) >> 3),
             count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap, $columnsBitmapAfter)),
@@ -341,8 +353,10 @@ class EventsIterator implements IteratorAggregate
         );
     }
 
-    // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_replication_binlog_event.html#sect_protocol_replication_event_write_rows_v2
-    // https://mariadb.com/kb/en/rows_event_v1v2-rows_compressed_event_v1/
+    /**
+     * TODO!: https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_replication_binlog_event.html#sect_protocol_replication_event_write_rows_v2
+     * TODO!: https://mariadb.com/kb/en/rows_event_v1v2-rows_compressed_event_v1/
+     */
     private function readWriteRowsEventV1(Buffer $buffer, Header $header): ?Events\WriteRows
     {
         $tableId = $buffer->readUInt48();
@@ -352,6 +366,7 @@ class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        /** @psalm-suppress PossiblyNullArgument */
         return new Events\WriteRows(
             $header,
             $tableId,
@@ -373,12 +388,13 @@ class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        /** @psalm-suppress PossiblyNullArgument */
         return new Events\WriteRows(
             $header,
             $tableId,
             $tableMap,
             $buffer->readUint16(),
-            $columnCount = $buffer->buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
+            $columnCount = $buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
             count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
             $rows,
@@ -394,6 +410,7 @@ class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        /** @psalm-suppress PossiblyNullArgument */
         return new Events\DeleteRows(
             $header,
             $tableId,
@@ -415,12 +432,13 @@ class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        /** @psalm-suppress PossiblyNullArgument */
         return new Events\DeleteRows(
             $header,
             $tableId,
             $tableMap,
             $buffer->readUint16(),
-            $columnCount = $buffer->buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
+            $columnCount = $buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
             count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
             $rows,

@@ -1,8 +1,10 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection;
 
-use ValueError;
+use UnexpectedValueException;
 
 final class Buffer
 {
@@ -18,36 +20,37 @@ final class Buffer
     public const UNSIGNED_INT24_COLUMN = 253;
 
     private int $offset = 0;
+    private int $length;
 
     public function __construct(
         private string $data = '',
-        private ?int $length = null,
+                int $length = null,
     ) {
         $this->length = $length ??= strlen($data);
     }
 
     public function readCodedBinary(): ?int
     {
-        $c = \ord($this->data[$this->offset]);
+        $size = \ord($this->data[$this->offset]);
         ++$this->offset;
 
-        if ($c === self::UNSIGNED_CHAR_COLUMN) {
+        if ($size === self::UNSIGNED_CHAR_COLUMN) {
             return null;
         }
 
-        if ($c < self::UNSIGNED_CHAR_COLUMN) {
-            return $c;
+        if ($size < self::UNSIGNED_CHAR_COLUMN) {
+            return $size;
         }
 
-        if ($c === self::UNSIGNED_SHORT_COLUMN) {
+        if ($size === self::UNSIGNED_SHORT_COLUMN) {
             return $this->readUInt16();
         }
 
-        if ($c === self::UNSIGNED_INT24_COLUMN) {
+        if ($size === self::UNSIGNED_INT24_COLUMN) {
             return $this->readUInt24();
         }
 
-        throw new BinaryDataReaderException('Column num ' . $c . ' not handled');
+        throw new UnexpectedValueException(sprintf('Not expected %dbit', $size));
     }
 
     public function readUIntBySize(int $size): int
@@ -75,36 +78,7 @@ final class Buffer
                 return $this->readUInt56();
                 break;
             default:
-                throw new ValueError(sprintf('Not expected %dbit', $size));
-        }
-    }
-
-    public function readIntBeBySize(int $size): int
-    {
-        switch ($size) {
-            case 1:
-                return $this->readInt8();
-                break;
-            case 2:
-                return $this->readInt16Be();
-                break;
-            case 3:
-                return $this->readInt24Be();
-                break;
-            case 4:
-                return $this->readInt32Be();
-                break;
-            case 5:
-                return $this->readInt40Be();
-                break;
-            case 6:
-                return $this->readInt48Be();
-                break;
-            case 7:
-                return $this->readInt56Be();
-                break;
-            default:
-                throw new ValueError(sprintf('Not expected %dbit', $size));
+                throw new UnexpectedValueException(sprintf('Not expected %dbit', $size));
         }
     }
 
@@ -128,9 +102,9 @@ final class Buffer
     public function readUntill(string $needle): string
     {
         $position = strpos($this->data, $needle, $this->offset);
-        $data = substr($this->data, $this->offset, $position - 1);
+        $data = substr($this->data, $this->offset, $position ? ($position - 1) : null);
 
-        $this->offset = $position + 1;
+        $this->offset = $position ? ($position + 1) : $this->length;
 
         return $data;
     }
@@ -170,8 +144,8 @@ final class Buffer
                 } else {
                     $current_byte .= '0';
                 }
-
             }
+
             $res .= strrev($current_byte);
         }
 

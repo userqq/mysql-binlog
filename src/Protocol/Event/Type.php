@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Protocol\Event;
 
@@ -112,7 +114,7 @@ enum Type: int implements JsonSerializable
 
     public static function tryFromString(string $name): ?static
     {
-        return $found = array_search($name, static::CASES, true)
+        return (false !== $found = array_search($name, static::CASES, true))
             ? static::from($found)
             : null;
     }

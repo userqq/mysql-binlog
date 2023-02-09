@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
-<psalm phpVersion="8.1">
+<psalm phpVersion="8.2">
     <projectFiles>
+        <directory name="bin" />
         <directory name="src" />
     </projectFiles>
-    <stubs>
-        <file name="stubs/FFI.php" preloadClasses="true" />
-    </stubs>
+    
+    <issueHandlers>
+        <Trace errorLevel="error" />
+    </issueHandlers>
 </psalm>

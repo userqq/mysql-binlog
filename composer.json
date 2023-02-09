@@ -2,6 +2,24 @@
     "name": "userqq/mysql-binlog",
     "type": "project",
     "license": "MIT",
+    "description": "MySQL/MariaDB binlog listener",
+    "keywords": [
+        "cdc",
+        "change data capture",
+        "changedatacapture",
+        "replication",
+        "binlog",
+        "events",
+        "php",
+        "mysql",
+        "mariadb",
+        "mysql replication",
+        "mysql binlog",
+        "mysql replication protocol",
+        "mariadb replication",
+        "mariadb binlog",
+        "mariadb replication protocol"
+    ],
     "config": {
         "platform": {
             "php": "8.2"

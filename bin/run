@@ -45,5 +45,5 @@ $signal = trapSignal([
     SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGTRAP, SIGABRT, SIGBUS, SIGFPE, SIGUSR1, SIGSEGV, SIGUSR2, SIGPIPE, SIGALRM, SIGTERM, SIGSTKFLT, SIGCLD, SIGCONT, SIGTSTP, SIGTTIN, SIGTTOU, SIGURG, SIGXCPU, SIGXFSZ, SIGVTALRM, SIGPROF, SIGPOLL, SIGIO, SIGPWR, SIGSYS
 ], true, $cancellation->getCancellation());
 
-$logger->info(sprintf('Received signal %d, stopping event queue', $signal));
-$logger->info(sprintf('Stopped at position %s', json_encode($currentPosition)));
+$logger->notice(sprintf('Received signal %d, stopping event queue', $signal));
+$logger->notice(sprintf('Stopped at position %s', json_encode($currentPosition)));

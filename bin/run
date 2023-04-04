@@ -17,7 +17,7 @@ use UserQQ\MySQL\Binlog\Config;
 use UserQQ\MySQL\Binlog\EventsIterator;
 use function Amp\trapSignal;
 
-$config = Config::fromEnv();
+$config = Config::build();
 
 $cancellation = new DeferredCancellation();
 $logger = new Logger('event-stream', [

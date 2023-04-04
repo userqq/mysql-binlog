@@ -16,11 +16,11 @@ final class Config
     private const DEFAULT_MYSQL_PORT      = 3306;
     private const DEFAULT_MYSQL_SLAVE_ID  = 666;
     private const DEFAULT_MYSQL_COLLATION = Collation::UTF8MB4_GENERAL_CI;
-    private const DEFAULT_LOG_LEVEL       = Level::Info;
+    private const DEFAULT_LOG_LEVEL       = Level::Notice;
 
-    public static function fromEnv(): static
+    public static function fromEnv(?Config $config = null): static
     {
-        $config = new static();
+        $config ??= new static();
 
         if (false !== $user = getenv('USER')) {
             $config = $config->withUser($user);
@@ -62,7 +62,7 @@ final class Config
             $config = $config->withTables(array_map('trim', explode(',', $tables)));
         }
 
-        if (false !== $excludeTables = getenv('IGNORE_TABLES')) {
+        if (false !== $excludeTables = getenv('EXCLUDE_TABLES')) {
             $config = $config->withExcludeTables(array_map('trim', explode(',', $excludeTables)));
         }
 
@@ -70,7 +70,7 @@ final class Config
             $config = $config->withDatabases(array_map('trim', explode(',', $databases)));
         }
 
-        if (false !== $excludeDatabases = getenv('IGNORE_DATABASES')) {
+        if (false !== $excludeDatabases = getenv('EXCLUDE_DATABASES')) {
             $config = $config->withExcludeDatabases(array_map('trim', explode(',', $excludeDatabases)));
         }
 
@@ -85,6 +85,100 @@ final class Config
         if (false !== $logLevel = getenv('LOG_LEVEL')) {
             $config = $config->withLogLevel($logLevel);
         }
+
+        return $config;
+    }
+
+    public static function fromArgs(?Config $config = null): static
+    {
+        $config ??= new static();
+
+        $options = getopt('', [
+            'user:',
+            'password:',
+            'host:',
+            'port:',
+            'collation:',
+            'slaveId:',
+            'binlogFile:',
+            'binlogPosition:',
+            'tables:',
+            'excludeTables:',
+            'databases:',
+            'excludeDatabases:',
+            'heartbeatPeriod:',
+            'statisticsInterval:',
+            'logLevel:',
+        ]);
+
+        if (array_key_exists('user', $options)) {
+            $config = $config->withUser($options['options']);
+        }
+
+        if (array_key_exists('password', $options)) {
+            $config = $config->withPassword($options['password']);
+        }
+
+        if (array_key_exists('host', $options)) {
+            $config = $config->withHost($options['host']);
+        }
+
+        if (array_key_exists('port', $options)) {
+            $config = $config->withPort((int) $options['port']);
+        }
+
+        if (array_key_exists('collation', $options)) {
+            $config = $config->withCollation($options['collation']);
+        }
+
+        if (array_key_exists('slaveId', $options)) {
+            $config = $config->withSlaveId((int) $options['slaveId']);
+        }
+
+        if (array_key_exists('binlogFile', $options)) {
+            $config = $config->withBinlogFile($options['binlogFile']);
+        }
+
+        if (array_key_exists('binlogPosition', $options)) {
+            $config = $config->withBinlogPosition((int) $options['binlogPosition']);
+        }
+
+        if (array_key_exists('tables', $options)) {
+            $config = $config->withTables(array_map('trim', explode(',', $options['tables'])));
+        }
+
+        if (array_key_exists('excludeTables', $options)) {
+            $config = $config->withExcludeTables(array_map('trim', explode(',', $options['excludeTables'])));
+        }
+
+        if (array_key_exists('databases', $options)) {
+            $config = $config->withDatabases(array_map('trim', explode(',', $options['databases'])));
+        }
+
+        if (array_key_exists('excludeDatabases', $options)) {
+            $config = $config->withExcludeDatabases(array_map('trim', explode(',', $options['excludeDatabases'])));
+        }
+
+        if (array_key_exists('heartbeatPeriod', $options)) {
+            $config = $config->withHeartbeatPeriod((float) $options['heartbeatPeriod']);
+        }
+
+        if (array_key_exists('statisticsInterval', $options)) {
+            $config = $config->withStatisticsInterval((float) $options['statisticsInterval']);
+        }
+
+        if (array_key_exists('logLevel', $options)) {
+            $config = $config->withLogLevel($options['logLevel']);
+        }
+
+        return $config;
+    }
+
+    public static function build(): static
+    {
+        $config = new static();
+        $config = static::fromEnv($config);
+        $config = static::fromArgs($config);
 
         return $config;
     }

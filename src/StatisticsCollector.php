@@ -12,7 +12,7 @@ use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 
 class StatisticsCollector
 {
-    private const LOG_FORMAT = '| %\' 6d %\' 9s %\' 10s %\' 8.2fms (%\' 7.2fmb)  %s';
+    private const LOG_FORMAT = '| %\' 6d %\' 9s %\' 10s %\' 8.2fms (%\' 10s)  %s';
 
     private int   $events;
     private int   $bytes;

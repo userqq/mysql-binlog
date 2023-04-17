@@ -121,7 +121,6 @@ class RowFactory
 
                             default:
                                 throw new UnexpectedValueException(sprintf('Got column with unexpected data type %s', var_export($column, true)));
-                                exit();
                         }
                     }
 

@@ -112,7 +112,7 @@ final class Config
         ]);
 
         if (array_key_exists('user', $options)) {
-            $config = $config->withUser($options['options']);
+            $config = $config->withUser($options['user']);
         }
 
         if (array_key_exists('password', $options)) {

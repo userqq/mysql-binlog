@@ -441,7 +441,7 @@ final class Connection implements IteratorAggregate
         );
     }
 
-    public function __destruct()
+    public function close(): void
     {
         if (!$this->socket->isClosed()) {
             try {
@@ -450,5 +450,10 @@ final class Connection implements IteratorAggregate
                 $this->socket->close();
             }
         }
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 }

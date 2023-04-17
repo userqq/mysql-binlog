@@ -7,7 +7,8 @@ namespace UserQQ\MySQL\Binlog;
 use Iterator;
 use IteratorAggregate;
 use SysvMessageQueue;
-use Amp\DeferredCancellation;
+use Amp\Cancellation;
+use Amp\CancelledException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Revolt\EventLoop;
@@ -44,9 +45,9 @@ class EventsIterator implements IteratorAggregate
     private readonly bool                      $check;
 
     public function __construct(
-        private readonly Config                $config       = new Config,
-        private readonly LoggerInterface       $logger       = new NullLogger,
-        private readonly ?DeferredCancellation $cancellation = null,
+        private readonly Config          $config       = new Config,
+        private readonly LoggerInterface $logger       = new NullLogger,
+        private readonly ?Cancellation   $cancellation = null,
     ) {
         $this->connection = new Connection($config, $logger);
         $this->columnsMetadataFactory = new ColumnMetadataFactory();
@@ -69,14 +70,16 @@ class EventsIterator implements IteratorAggregate
 
     public function getIterator(): Iterator
     {
-        foreach ($this->connection as $buffer) {
-            if (null !== $event = $this->parse($buffer)) {
-                yield $this->position => $event;
-            }
+        try {
+            foreach ($this->connection as $buffer) {
+                if (null !== $event = $this->parse($buffer)) {
+                    yield $this->position => $event;
+                }
 
-            if ($this->cancellation?->isCancelled()) {
-                break;
+                $this->cancellation?->throwIfRequested();
             }
+        } catch (CancelledException) {
+            $this->connection->close();
         }
 
         $this->logger->info('End events queue');
@@ -193,6 +196,10 @@ class EventsIterator implements IteratorAggregate
                         break;
                     case Type::XID_EVENT:
                         $event = $this->readXidEvent($buffer, $header);
+                        break;
+                    case Type::USER_VAR_EVENT:
+                    case Type::STOP_EVENT:
+                        return null;
                         break;
                     default:
                         /** @psalm-suppress TypeDoesNotContainType */

@@ -82,6 +82,29 @@ final class Buffer
         }
     }
 
+    public function readIntBeBySize(int $size): int
+    {
+        switch ($size) {
+            case 1:
+                return $this->readUInt8();
+                break;
+            case 2:
+                return $this->readInt16Be();
+                break;
+            case 3:
+                return $this->readInt24Be();
+                break;
+            case 4:
+                return $this->readInt32Be();
+                break;
+            case 5:
+                return $this->readInt40Be();
+                break;
+            default:
+                throw new UnexpectedValueException(sprintf('Not expected %dbit', $size));
+        }
+    }
+
     public function read(?int $length = null): string
     {
         if (0 === $length) {

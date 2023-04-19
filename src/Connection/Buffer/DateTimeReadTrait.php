@@ -13,10 +13,9 @@ trait DateTimeReadTrait
     public function readTimestamp2(int $fsp): string
     {
         if (0 === $t = $this->readInt32Be()) {
-            return '0000-00-00 00:00:00';
+            return '0000-00-00 00:00:00'
+                . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
         }
-
-        $this->offset += ($fsp + 1) >> 1;
 
         $second = $t % 60;
         $t = intdiv($t, 60);
@@ -40,7 +39,8 @@ trait DateTimeReadTrait
             $e -= 13;
         }
 
-        return \sprintf('%04d-%02d-%02d %02d:%02d:%02d', $c, $e, $f, $hour, $minute, $second);
+        return \sprintf('%04d-%02d-%02d %02d:%02d:%02d', $c, $e, $f, $hour, $minute, $second)
+            . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
     }
 
     public function readDate(): string
@@ -68,8 +68,8 @@ trait DateTimeReadTrait
             (\ord($this->data[$this->offset + 4]) & 0x3f),
         );
 
-        $this->offset += (5 + (($fsp + 1) >> 1));
+        $this->offset += 5;
 
-        return $value;
+        return $value . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
     }
 }

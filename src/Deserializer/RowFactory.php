@@ -138,6 +138,20 @@ class RowFactory
                                     ),
                                 };
                                 break;
+                            case ColumnType::SET:
+                                $setBitmap = $buffer->read($column->meta->size);
+                                $row[$column->name] = implode(',', array_map(
+                                    fn (string $value) => match ($column->charset) {
+                                        Collation::BINARY => "binary:base64,\0\0\0" . base64_encode($value),
+                                        default => $column->charset->convertToUTF8($value),
+                                    },
+                                    array_filter(
+                                        $column->values,
+                                        fn (string $value, int $k): bool => (bool) (\ord($setBitmap[$k >> 3]) & (1 << ($k & 0x07))),
+                                        ARRAY_FILTER_USE_BOTH
+                                    )
+                                ));
+                                break;
 
                             default:
                                 throw new UnexpectedValueException(sprintf('Got column with unexpected data type %s', var_export($column, true)));

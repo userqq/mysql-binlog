@@ -128,6 +128,7 @@ class ColumnMetadataFactory
                     break;
 
                 case OptionalMetadataType::ENUM_STR_VALUE:
+                case OptionalMetadataType::SET_STR_VALUE:
                     $metadata[$type->value] = [];
                     for ($j = 0; $sub->getLeft(); ++$j) {
                         $valuesCount = $sub->readCodedBinary();
@@ -156,7 +157,9 @@ class ColumnMetadataFactory
         }
 
         $integerColumn = 0;
-        $enumOrSetColumn = 0;
+        $enumColumn = 0;
+        $setColumn = 0;
+        $enumSetColumn = 0;
         /** https://github.com/MariaDB/server/blob/d20a96f9c1c0240eac2ad8520a04f06e218c4e0a/sql/log_event_client.cc#L308 */
         $characterColumn = 0;
         foreach ($columns as $i => $column) {
@@ -239,11 +242,30 @@ class ColumnMetadataFactory
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]
-                            ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
-                        $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumOrSetColumn]
+                            ?? $metadata[OptionalMetadataType::ENUM_AND_SET_COLUMN_CHARSET->value][$enumSetColumn]
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumColumn]
                             ?? throw new OutOfBoundsException(sprintf('Expected to have enum value index %d, but got nothing', $i)),
                     );
-                    ++$enumOrSetColumn;
+                    ++$enumColumn;
+                    ++$enumSetColumn;
+                    break;
+
+                case ColumnType::SET:
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
+                    $columns[$i] = new Column\EnumColumn(
+                        $i,
+                        $column,
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]
+                            ?? $metadata[OptionalMetadataType::ENUM_AND_SET_COLUMN_CHARSET->value][$enumSetColumn]
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::SET_STR_VALUE->value][$setColumn]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have set value index %d, but got nothing', $i)),
+                    );
+                    ++$setColumn;
+                    ++$enumSetColumn;
                     break;
 
                 // TODO:! PRIMARY_KEY_WITH_PREFIX

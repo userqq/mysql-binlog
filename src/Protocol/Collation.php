@@ -982,7 +982,9 @@ enum Collation: int implements JsonSerializable
     ];
 
     private const PHP_CHARSETS = [
-        8 => 'ISO-8859-1',
+        'latin1' => 'ISO-8859-1',
+        'utf8mb3' => 'UTF-8',
+        'utf8mb4' => 'UTF-8',
     ];
 
     public function getCharset(): string
@@ -1018,7 +1020,7 @@ enum Collation: int implements JsonSerializable
         return mb_convert_encoding(
             $data,
             'UTF-8',
-            static::PHP_CHARSETS[$this->value]
+            static::PHP_CHARSETS[$this->getCharset()]
                 ?? throw new \Exception(sprintf('Charset %s is not defined yet', $this->toString())),
         );
     }

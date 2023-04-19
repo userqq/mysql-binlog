@@ -31,7 +31,7 @@ EventLoop::setErrorHandler(function (Throwable $t) use ($logger, $cancellation):
     $cancellation->cancel($t);
 });
 
-$eventStream = new EventsIterator($config, $logger, $cancellation);
+$eventStream = new EventsIterator($config, $logger, $cancellation->getCancellation());
 
 $currentPosition = null;
 EventLoop::queue(function () use ($eventStream, &$currentPosition): void {

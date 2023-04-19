@@ -101,7 +101,10 @@ class RowFactory
 
                             case ColumnType::VARCHAR:
                             case ColumnType::STRING:
-                                $row[$column->name] = $buffer->readLengthString($column->meta->maxLength > 255 ? 2 : 1);
+                                $row[$column->name] = match ($column->charset) {
+                                    Collation::BINARY => "binary:base64,\0\0\0" . base64_encode($buffer->readLengthString($column->meta->maxLength > 255 ? 2 : 1)),
+                                    default => $column->charset->convertToUTF8($buffer->readLengthString($column->meta->maxLength > 255 ? 2 : 1)),
+                                };
                                 break;
 
                             case ColumnType::BLOB:
@@ -124,8 +127,16 @@ class RowFactory
                                 break;
 
                             case ColumnType::ENUM:
-                                $row[$column->name] = $column->values[$buffer->readUIntBySize($column->meta->size) - 1]
-                                    ?? '';
+                                $row[$column->name] = match ($column->charset) {
+                                    Collation::BINARY => "binary:base64,\0\0\0". base64_encode(
+                                        $column->values[$buffer->readUIntBySize($column->meta->size) - 1]
+                                            ?? ''
+                                    ),
+                                    default => $column->charset->convertToUTF8(
+                                        $column->values[$buffer->readUIntBySize($column->meta->size) - 1]
+                                            ?? ''
+                                    ),
+                                };
                                 break;
 
                             default:

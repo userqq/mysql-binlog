@@ -154,6 +154,7 @@ class EventsIterator implements IteratorAggregate
                 if ($this->position->filename !== $event->filename || $this->position->position !== $event->position) {
                     $this->logger->info(sprintf('[EVENT][ROTATE] %s:%d', $event->filename, $event->position));
                 }
+                $this->rowFactory->dropTableMaps();
                 $this->statisticsCollector->pushEvent($event);
                 $this->position = new BinlogPosition($event->filename, $event->position);
                 return null;

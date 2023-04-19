@@ -20,6 +20,11 @@ class RowFactory
         $this->tableMaps[$tableMap->tableId] = $tableMap;
     }
 
+    public function dropTableMaps(): void
+    {
+        $this->tableMaps = [];
+    }
+
     public function readRows(Buffer $buffer, Header $header, int $tableId, int $columnCount, string $columnsBitmap, ?string $columnsBitmapAfter = null): array
     {
         $columns = $this->tableMaps[$tableId]->columns;

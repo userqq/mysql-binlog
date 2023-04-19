@@ -981,6 +981,10 @@ enum Collation: int implements JsonSerializable
         1270 => 'utf8mb4',
     ];
 
+    private const PHP_CHARSETS = [
+        8 => 'ISO-8859-1',
+    ];
+
     public function getCharset(): string
     {
         return static::CHARSETS[$this->value];
@@ -1007,5 +1011,15 @@ enum Collation: int implements JsonSerializable
     public function jsonSerialize(): mixed
     {
         return $this->toString();
+    }
+
+    public function convertToUTF8(string $data): string
+    {
+        return mb_convert_encoding(
+            $data,
+            'UTF-8',
+            static::PHP_CHARSETS[$this->value]
+                ?? throw new \Exception(sprintf('Charset %s is not defined yet', $this->toString())),
+        );
     }
 }

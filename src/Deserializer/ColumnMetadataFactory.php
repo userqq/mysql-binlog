@@ -54,6 +54,7 @@ class ColumnMetadataFactory
                     }
                     break;
 
+                /* https://github.com/MariaDB/server/blob/d20a96f9c1c0240eac2ad8520a04f06e218c4e0a/sql/log_event_client.cc#L3179 */
                 case ColumnType::BLOB:
                 case ColumnType::GEOMETRY:
                 case ColumnType::JSON:
@@ -105,14 +106,16 @@ class ColumnMetadataFactory
                  */
                 case OptionalMetadataType::DEFAULT_CHARSET:
                 case OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET:
-                    $metadata[$type->value] = ['defaultCharsetCollation' => Collation::from(
-                        $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have collation length, nut got NULL')
-                    )];
+                    $metadata[$type->value] = Collation::from(
+                        $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have collation length, but got NULL')
+                    );
+                    break;
+
+                case OptionalMetadataType::COLUMN_CHARSET:
+                case OptionalMetadataType::ENUM_AND_SET_COLUMN_CHARSET:
                     while ($sub->getLeft()) {
-                        $metadata[$type->value]['charsetCollations'][
-                            $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have column id, nut got NULL')
-                        ] = Collation::from(
-                            $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have collation id, nut got NULL')
+                        $metadata[$type->value][] = Collation::from(
+                            $sub->readCodedBinary() ?? throw new OutOfBoundsException('Expected to have collation id, but got NULL')
                         );
                     }
                     break;
@@ -144,6 +147,8 @@ class ColumnMetadataFactory
                 default:
                     throw new UnexpectedValueException(sprintf('Unknown optional medatada type %d', $type->value));
             }
+
+            assert(0 === $sub->getLeft());
         }
 
         if (!isset($metadata[OptionalMetadataType::COLUMN_NAME->value])) {
@@ -151,8 +156,9 @@ class ColumnMetadataFactory
         }
 
         $integerColumn = 0;
-        $enumColumn = 0;
-
+        $enumOrSetColumn = 0;
+        /** https://github.com/MariaDB/server/blob/d20a96f9c1c0240eac2ad8520a04f06e218c4e0a/sql/log_event_client.cc#L308 */
+        $characterColumn = 0;
         foreach ($columns as $i => $column) {
             switch ($column->type) {
                 case ColumnType::TINY:
@@ -184,25 +190,6 @@ class ColumnMetadataFactory
                     break;
                     break;
 
-                case ColumnType::VARCHAR:
-                case ColumnType::STRING:
-                    /**
-                     * TODO: check COLUMN_CHARSET, then DEFAULT_CHARSET
-                     * TODO: DEFAULT_CHARSET['charsetCollations'] ?!
-                     *
-                     * @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument
-                     */
-                    $columns[$i] = new Column\TextColumn(
-                        $i,
-                        $column,
-                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
-                        $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]['defaultCharsetCollation']
-                            ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
-                    );
-                    break;
-
-
                 case ColumnType::DATE:
                 case ColumnType::DATETIME2:
                 case ColumnType::TIMESTAMP2:
@@ -222,7 +209,26 @@ class ColumnMetadataFactory
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]
+                            ?? $metadata[OptionalMetadataType::COLUMN_CHARSET->value][$characterColumn]
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $characterColumn)),
                     );
+                    ++$characterColumn;
+                    break;
+
+                case ColumnType::VARCHAR:
+                case ColumnType::STRING:
+                    /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
+                    $columns[$i] = new Column\TextColumn(
+                        $i,
+                        $column,
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                        $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]
+                            ?? $metadata[OptionalMetadataType::COLUMN_CHARSET->value][$characterColumn]
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $characterColumn)),
+                    );
+                    ++$characterColumn;
                     break;
 
                 case ColumnType::ENUM:
@@ -232,16 +238,15 @@ class ColumnMetadataFactory
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
-                        $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]['defaultCharsetCollation']
+                        $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]
                             ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
-                        $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumColumn]
+                        $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumOrSetColumn]
                             ?? throw new OutOfBoundsException(sprintf('Expected to have enum value index %d, but got nothing', $i)),
                     );
-                    ++$enumColumn;
+                    ++$enumOrSetColumn;
                     break;
 
                 // TODO:! PRIMARY_KEY_WITH_PREFIX
-                // TODO:! use names of collations instead of ids
                 default:
                     throw new UnexpectedValueException(sprintf('Unknown column type %s', var_export($column->type, true)));
             }

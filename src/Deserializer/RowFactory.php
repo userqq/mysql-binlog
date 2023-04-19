@@ -6,6 +6,7 @@ namespace UserQQ\MySQL\Binlog\Deserializer;
 
 use UnexpectedValueException;
 use UserQQ\MySQL\Binlog\Connection\Buffer;
+use UserQQ\MySQL\Binlog\Protocol\Collation;
 use UserQQ\MySQL\Binlog\Protocol\ColumnType;
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
@@ -99,7 +100,10 @@ class RowFactory
                                 break;
 
                             case ColumnType::BLOB:
-                                $row[$column->name] = $buffer->readLengthString($column->meta->length);
+                                $row[$column->name] = match ($column->charset) {
+                                    Collation::BINARY => "binary:base64,\0\0\0" . base64_encode($buffer->readLengthString($column->meta->length)),
+                                    default => $column->charset->convertToUTF8($buffer->readLengthString($column->meta->length)),
+                                };
                                 break;
 
                             case ColumnType::DATE:

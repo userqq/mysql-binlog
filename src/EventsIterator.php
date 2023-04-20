@@ -85,6 +85,19 @@ class EventsIterator implements IteratorAggregate
         $this->logger->info('End events queue');
     }
 
+    public function getPosition(): BinlogPosition
+    {
+        if (
+            ($this->config->binlogPosition && $this->config->binlogFile)
+            && ($this->config->binlogFile === $this->position->filename)
+            && ($this->config->binlogPosition > $this->position->position)
+        ) {
+            return new BinlogPosition($this->config->binlogFile, $this->config->binlogPosition);
+        }
+
+        return $this->position;
+    }
+
     private function check(Events\TableMap $tableMap): bool
     {
         if (!$this->check) {
@@ -200,6 +213,7 @@ class EventsIterator implements IteratorAggregate
                         break;
                     case Type::USER_VAR_EVENT:
                     case Type::STOP_EVENT:
+                        $this->position = $header->nextPosition;
                         return null;
                         break;
                     default:

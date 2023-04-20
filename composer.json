@@ -38,7 +38,7 @@
         }
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.1",
         "ext-gmp": "*",
         "ext-pcntl": "*",
         "amphp/amp": "^3",

@@ -146,7 +146,7 @@ class EventsIterator implements IteratorAggregate
                 $this->tableMaps[$event->tableId] = $event;
                 $this->rowFactory->addTableMap($event);
                 $this->statisticsCollector->pushEvent($event);
-                $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
+                $this->position = $header->nextPosition;
                 return null;
                 break;
             case Type::ROTATE_EVENT:
@@ -166,7 +166,7 @@ class EventsIterator implements IteratorAggregate
             && ($this->config->binlogFile === $this->position->filename)
             && ($this->config->binlogPosition > $this->position->position)
         ) {
-            $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
+            $this->position = $header->nextPosition;
             $this->statisticsCollector->pushHeader($header);
             return null;
         }
@@ -211,7 +211,7 @@ class EventsIterator implements IteratorAggregate
                 assert($header->checksumSize === 0 || strrev($buffer->read()) === hash('crc32b', substr((string) $buffer, 1, -1 * $header->checksumSize), true));
 
                 $this->statisticsCollector->pushEvent($event);
-                $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
+                $this->position = $header->nextPosition;
                 return null;
         }
 
@@ -224,7 +224,7 @@ class EventsIterator implements IteratorAggregate
 
         /** @psalm-suppress PossiblyNullArgument */
         $this->statisticsCollector->pushRowEvent($event);
-        $this->position = new BinlogPosition($this->position->filename, $header->nextPosition);
+        $this->position = $header->nextPosition;
 
         return $event;
     }
@@ -240,7 +240,7 @@ class EventsIterator implements IteratorAggregate
             Type::from($buffer->readUInt8()),
             $buffer->readInt32(),
             $eventSize = $buffer->readInt32(),
-            $buffer->readInt32(),
+            new BinlogPosition($this->position->filename, $buffer->readInt32()),
             $buffer->readUInt16(),
             $checksumSize = ($this->formatDescription?->checksumAlgorithmType > 0) ? 4 : 0,
             ($eventSize + 1 /* Packet type header*/) - $checksumSize,

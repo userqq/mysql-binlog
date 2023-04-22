@@ -11,7 +11,7 @@ use UserQQ\MySQL\Binlog\Protocol\ColumnType;
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 
-class RowFactory
+final class RowFactory
 {
     private array $tableMaps = [];
 

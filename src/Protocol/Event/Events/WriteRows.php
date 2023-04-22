@@ -8,8 +8,10 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Event;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 
-class WriteRows implements Event, RowEvent
+final class WriteRows implements Event, RowEvent
 {
+    public const ACTION = 'insert';
+
     public function __construct(
         public readonly Header    $header,
         public readonly int       $tableId,
@@ -24,6 +26,7 @@ class WriteRows implements Event, RowEvent
     public function jsonSerialize(): mixed
     {
         $vars = get_object_vars($this);
+        $vars['action'] = static::ACTION;
         unset($vars['columnsBitmap']);
         return $vars;
     }

@@ -17,7 +17,7 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Column;
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Meta;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 
-class ColumnMetadataFactory
+final class ColumnMetadataFactory
 {
     public function readColumns(Buffer $buffer, int $columnCount): array
     {

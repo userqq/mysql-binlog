@@ -10,7 +10,7 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Events;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 
-class StatisticsCollector
+final class StatisticsCollector
 {
     private const LOG_FORMAT = '| %\' 6d %\' 9s %\' 10s %\' 8.2fms (%\' 10s)  %s';
 

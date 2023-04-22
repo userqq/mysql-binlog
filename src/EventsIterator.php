@@ -27,7 +27,7 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Type;
 /**
  * @template-implements IteratorAggregate<Events\WriteRows|Events\UpdateRows|Events\DeleteRows>
  */
-class EventsIterator implements IteratorAggregate
+final class EventsIterator implements IteratorAggregate
 {
     private readonly Connection                $connection;
     private readonly ColumnMetadataFactory     $columnsMetadataFactory;

@@ -7,7 +7,7 @@ namespace UserQQ\MySQL\Binlog\Protocol\Event;
 use JsonSerializable;
 use UserQQ\MySQL\Binlog\BinlogPosition;
 
-class Header implements JsonSerializable
+final class Header implements JsonSerializable
 {
     public function __construct(
         public readonly BinlogPosition $position,

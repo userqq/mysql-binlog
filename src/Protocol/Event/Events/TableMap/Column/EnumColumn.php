@@ -7,7 +7,7 @@ namespace UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Column;
 use UserQQ\MySQL\Binlog\Protocol\Collation;
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Meta\Meta;
 
-class EnumColumn implements Column
+final class EnumColumn implements Column
 {
     public function __construct(
         public readonly int       $index,

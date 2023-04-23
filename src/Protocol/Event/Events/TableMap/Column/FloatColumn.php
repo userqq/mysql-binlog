@@ -6,7 +6,7 @@ namespace UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Column;
 
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Meta\Meta;
 
-class FloatColumn implements Column
+final class FloatColumn implements Column
 {
     public function __construct(
         public readonly int    $index,

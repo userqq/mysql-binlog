@@ -42,10 +42,6 @@ final class Config
             $config = $config->withCollation($collation);
         }
 
-        if (false !== $collation = getenv('COLLATION')) {
-            $config = $config->withCollation($collation);
-        }
-
         if (false !== $slaveId = getenv('SLAVE_ID')) {
             $config = $config->withSlaveId((int) $slaveId);
         }

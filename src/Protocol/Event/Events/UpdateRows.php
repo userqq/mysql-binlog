@@ -8,8 +8,10 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Event;
 use UserQQ\MySQL\Binlog\Protocol\Event\Header;
 use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 
-class UpdateRows implements Event, RowEvent
+final class UpdateRows implements Event, RowEvent
 {
+    public const ACTION = 'update';
+
     public function __construct(
         public readonly Header   $header,
         public readonly int      $tableId,
@@ -25,6 +27,7 @@ class UpdateRows implements Event, RowEvent
     public function jsonSerialize(): mixed
     {
         $vars = get_object_vars($this);
+        $vars['action'] = static::ACTION;
         unset($vars['columnsBitmap']);
         unset($vars['columnsBitmapAfter']);
         return $vars;

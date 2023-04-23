@@ -6,7 +6,7 @@ namespace UserQQ\MySQL\Binlog;
 
 use JsonSerializable;
 
-class BinlogPosition implements JsonSerializable
+final class BinlogPosition implements JsonSerializable
 {
     public function __construct(
         public readonly string $filename,

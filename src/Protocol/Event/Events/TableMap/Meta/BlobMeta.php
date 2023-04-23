@@ -6,7 +6,7 @@ namespace UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Meta;
 
 use UserQQ\MySQL\Binlog\Protocol\ColumnType;
 
-class BlobMeta implements Meta
+final class BlobMeta implements Meta
 {
     public function __construct(
         public readonly ColumnType $type,

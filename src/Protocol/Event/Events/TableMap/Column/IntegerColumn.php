@@ -6,7 +6,7 @@ namespace UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Column;
 
 use UserQQ\MySQL\Binlog\Protocol\Event\Events\TableMap\Meta\Meta;
 
-class IntegerColumn implements Column
+final class IntegerColumn implements Column
 {
     public function __construct(
         public readonly int    $index,

@@ -27,7 +27,7 @@ use UserQQ\MySQL\Binlog\Protocol\Event\Type;
 /**
  * @template-implements IteratorAggregate<Events\WriteRows|Events\UpdateRows|Events\DeleteRows>
  */
-class EventsIterator implements IteratorAggregate
+final class EventsIterator implements IteratorAggregate
 {
     private readonly Connection                $connection;
     private readonly ColumnMetadataFactory     $columnsMetadataFactory;
@@ -49,7 +49,7 @@ class EventsIterator implements IteratorAggregate
         private readonly LoggerInterface $logger       = new NullLogger,
         private readonly ?Cancellation   $cancellation = null,
     ) {
-        $this->connection = new Connection($config, $logger);
+        $this->connection = new Connection($config, $logger, $cancellation);
         $this->columnsMetadataFactory = new ColumnMetadataFactory();
         $this->rowFactory = new RowFactory();
 

@@ -36,7 +36,7 @@ $eventStream = new EventsIterator($config, $logger, $cancellation->getCancellati
 $currentPosition = null;
 EventLoop::queue(function () use ($eventStream, &$currentPosition): void {
     foreach ($eventStream as $position => $event) {
-        echo json_encode($event) . PHP_EOL;
+        echo json_encode($event, JSON_PRETTY_PRINT) . PHP_EOL;
         $currentPosition = $position;
     }
 });

@@ -101,4 +101,5 @@ foreach ($eventsIterator as $position => $event) {
 ```
 Run inserts, updates, and deletes on your database and see how it reacts!
 
+See the [`examples`](https://github.com/userqq/mysql-binlog/tree/main/examples) folder for more examples.
 

@@ -982,7 +982,15 @@ enum Collation: int implements JsonSerializable
     ];
 
     private const PHP_CHARSETS = [
-        'latin1' => 'Windows-1251', // Yes, really
+        /**
+         * https://dev.mysql.com/doc/refman/8.0/en/charset-we-sets.html
+         * MySQL's latin1 is the same as the Windows cp1252 character set.
+         * This means it is the same as the official ISO 8859-1 or IANA (Internet Assigned Numbers Authority) latin1,
+         * except that IANA latin1 treats the code points between 0x80 and 0x9f as “undefined,” whereas cp1252,
+         * and therefore MySQL's latin1, assign characters for those positions. For example, 0x80 is the Euro sign.
+         * For the “undefined” entries in cp1252, MySQL translates 0x81 to Unicode 0x0081, 0x8d to 0x008d, 0x8f to 0x008f, 0x90 to 0x0090, and 0x9d to 0x009d.
+         */
+        'latin1' => 'Windows-1252', // Yes, really
         'utf8mb3' => 'UTF-8',
         'utf8mb4' => 'UTF-8',
     ];

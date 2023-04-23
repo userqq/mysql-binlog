@@ -1,6 +1,6 @@
 {
     "name": "userqq/mysql-binlog",
-    "type": "project",
+    "type": "library",
     "license": "MIT",
     "description": "MySQL/MariaDB binlog listener",
     "keywords": [

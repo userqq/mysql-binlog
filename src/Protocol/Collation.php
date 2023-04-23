@@ -982,7 +982,7 @@ enum Collation: int implements JsonSerializable
     ];
 
     private const PHP_CHARSETS = [
-        'latin1' => 'ISO-8859-1',
+        'latin1' => 'Windows-1251', // Yes, really
         'utf8mb3' => 'UTF-8',
         'utf8mb4' => 'UTF-8',
     ];

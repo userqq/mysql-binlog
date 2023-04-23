@@ -49,7 +49,7 @@ final class EventsIterator implements IteratorAggregate
         private readonly LoggerInterface $logger       = new NullLogger,
         private readonly ?Cancellation   $cancellation = null,
     ) {
-        $this->connection = new Connection($config, $logger);
+        $this->connection = new Connection($config, $logger, $cancellation);
         $this->columnsMetadataFactory = new ColumnMetadataFactory();
         $this->rowFactory = new RowFactory();
 

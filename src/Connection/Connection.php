@@ -37,12 +37,15 @@ final class Connection implements IteratorAggregate
     private          int            $seqId = -1;
     private readonly string         $binlogFile;
     private readonly int            $binlogPosition;
+    private readonly ?string        $cancellationId;
 
     public function __construct(
         private readonly Config          $config,
         private readonly LoggerInterface $logger,
+        private readonly ?Cancellation   $cancellation = null,
     ) {
-        $this->socket = connect(sprintf('tcp://%s:%d', $this->config->host, $this->config->port));
+        $this->socket = connect(sprintf('tcp://%s:%d', $this->config->host, $this->config->port), cancellation: $cancellation);
+
         if (method_exists($this->socket, 'setChunkSize')) {
             $this->socket->setChunkSize(65536);
         }
@@ -379,16 +382,16 @@ final class Connection implements IteratorAggregate
     private function readPacket(): Buffer
     {
         $data = '';
-        $header = $this->reader->readLength(4);
+        $header = $this->reader->readLength(4, $this?->cancellation);
         /** @var int<1, max> $length */
         $length = \ord($header[0]) | (\ord($header[1]) << 8) | (\ord($header[2]) << 16);
         $this->seqId = \ord($header[3]);
 
         read: {
-            $data .= $this->reader->readLength($length);
+            $data .= $this->reader->readLength($length, $this?->cancellation);
 
             if (static::MAX_PACKET_SIZE === $length) {
-                $header = $this->reader->readLength(4);
+                $header = $this->reader->readLength(4, $this?->cancellation);
                 $length = \ord($header[0]) | (\ord($header[1]) << 8) | (\ord($header[2]) << 16);
                 if (\ord($header[3]) !== ++$this->seqId) {
                     throw new \Exception('Got packets out of order');

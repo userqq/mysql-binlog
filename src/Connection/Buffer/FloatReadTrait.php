@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection\Buffer;
 
-use Countable;
 use ValueError;
 
 trait FloatReadTrait

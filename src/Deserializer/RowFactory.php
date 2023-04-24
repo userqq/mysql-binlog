@@ -90,9 +90,12 @@ final class RowFactory
                             case ColumnType::FLOAT:
                                 $row[$column->name] = round($buffer->readFloat(), $column->meta->size);
                                 break;
-
                             case ColumnType::DOUBLE:
                                 $row[$column->name] = $buffer->readDouble();
+                                break;
+
+                            case ColumnType::NEWDECIMAL:
+                                $row[$column->name] = $buffer->readDecimal($column->meta->precision, $column->meta->scale);
                                 break;
 
                             case ColumnType::BIT:
@@ -124,6 +127,10 @@ final class RowFactory
 
                             case ColumnType::TIMESTAMP2:
                                 $row[$column->name] = $buffer->readTimestamp2($column->meta->fsp);
+                                break;
+
+                            case ColumnType::TIME2:
+                                $row[$column->name] = $buffer->readTime2($column->meta->fsp);
                                 break;
 
                             case ColumnType::ENUM:

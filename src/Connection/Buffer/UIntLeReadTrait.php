@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection\Buffer;
 
-use Countable;
 use ValueError;
 
 trait UIntLeReadTrait
@@ -130,6 +129,7 @@ trait UIntLeReadTrait
 
         ++$this->offset;
 
+        // if value greater than signed int64, than we should handle this with GMP and return string
         if ($value < 0) {
             $this->offset -= 8;
             /** @psalm-suppress UndefinedConstant */

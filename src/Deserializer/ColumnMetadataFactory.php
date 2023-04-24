@@ -191,11 +191,20 @@ final class ColumnMetadataFactory
                             ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
+
+                case ColumnType::NEWDECIMAL:
+                    $columns[$i] = new Column\DecimalColumn(
+                        $i,
+                        $column,
+                        $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                    );
                     break;
 
                 case ColumnType::DATE:
                 case ColumnType::DATETIME2:
                 case ColumnType::TIMESTAMP2:
+                case ColumnType::TIME2:
                     /** @psalm-suppress PossiblyInvalidArrayOffset, PossiblyInvalidArgument */
                     $columns[$i] = new Column\TimeColumn(
                         $i,

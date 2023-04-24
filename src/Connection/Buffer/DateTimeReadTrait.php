@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection\Buffer;
 
-use Countable;
 use ValueError;
 
 trait DateTimeReadTrait
@@ -69,6 +68,20 @@ trait DateTimeReadTrait
         );
 
         $this->offset += 5;
+
+        return $value . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
+    }
+
+    public function readTime2(int $fsp): string
+    {
+        $value = sprintf(
+            '%02d:%02d:%02d',
+            ((\ord($this->data[$this->offset + 1]) & 0xf0) >> 4) + ((\ord($this->data[$this->offset]) & 0x01) << 4),
+            (\ord($this->data[$this->offset + 2]) >> 6) + ((\ord($this->data[$this->offset + 1]) & 0x0f) << 2),
+            (\ord($this->data[$this->offset + 2]) & 0x3f),
+        );
+
+        $this->offset += 3;
 
         return $value . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
     }

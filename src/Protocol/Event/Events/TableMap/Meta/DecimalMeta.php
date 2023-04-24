@@ -11,7 +11,7 @@ final class DecimalMeta implements Meta
     public function __construct(
         public readonly ColumnType $type,
         public readonly int        $precision,
-        public readonly int        $decimals,
+        public readonly int        $scale,
     ) {}
 
     public function jsonSerialize(): mixed

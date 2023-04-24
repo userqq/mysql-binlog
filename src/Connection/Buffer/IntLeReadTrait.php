@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace UserQQ\MySQL\Binlog\Connection\Buffer;
 
-use Countable;
 use ValueError;
 
 trait IntLeReadTrait
@@ -68,15 +67,22 @@ trait IntLeReadTrait
     /**
      * Read LE int64_t
      */
-    public function readInt64(): string
+    public function readInt64(): int
     {
-        /** @psalm-suppress UndefinedConstant */
-        $value = gmp_import($str = substr($this->data, $this->offset, 8), 1, \GMP_LSW_FIRST | \GMP_LITTLE_ENDIAN);
-        $value = \ord($this->data[$this->offset + 7]) & 0x80
-            ? $value - gmp_init('0x10000000000000000')
-            : $value;
-        $this->offset += 8;
+        // if value less than zero overflow will handle this
+        $value = \ord($this->data[$this->offset])
+            | (\ord($this->data[++$this->offset]) << 8)
+            | (\ord($this->data[++$this->offset]) << 16)
+            | (\ord($this->data[++$this->offset]) << 24)
+            | (\ord($this->data[++$this->offset]) << 32)
+            | (\ord($this->data[++$this->offset]) << 40)
+            | (\ord($this->data[++$this->offset]) << 48)
+            | (\ord($this->data[++$this->offset]) << 56);
 
-        return gmp_strval($value);
+        ++$this->offset;
+
+        assert(((string) $value) === gmp_strval(gmp_import(substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN)));
+
+        return $value;
     }
 }

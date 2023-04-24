@@ -10,6 +10,7 @@ final class Buffer
 {
     use Buffer\DateTimeReadTrait;
     use Buffer\FloatReadTrait;
+    use Buffer\DecimalReadTrait;
     use Buffer\IntBeReadTrait;
     use Buffer\IntLeReadTrait;
     use Buffer\UIntLeReadTrait;

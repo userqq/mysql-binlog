@@ -214,6 +214,8 @@ final class EventsIterator implements IteratorAggregate
                         break;
                     case Type::USER_VAR_EVENT:
                     case Type::STOP_EVENT:
+                    case Type::PREVIOUS_GTIDS_EVENT:
+                    case Type::ANONYMOUS_GTID_EVENT:
                         $this->position = $header->nextPosition;
                         return null;
                         break;

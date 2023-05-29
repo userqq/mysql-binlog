@@ -145,6 +145,10 @@ final class ColumnMetadataFactory
                     }
                     break;
 
+                case OptionalMetadataType::COLUMN_VISIBILITY:
+                    // we do not care about columns visibility
+                    break;
+
                 default:
                     throw new UnexpectedValueException(sprintf('Unknown optional medatada type %d', $type->value));
             }

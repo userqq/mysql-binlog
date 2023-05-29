@@ -19,6 +19,7 @@ enum OptionalMetadataType: int
     case PRIMARY_KEY_WITH_PREFIX      = 9;
     case ENUM_AND_SET_DEFAULT_CHARSET = 10;
     case ENUM_AND_SET_COLUMN_CHARSET  = 11;
+    case COLUMN_VISIBILITY            = 12;
 
     private const CASES = [
         1 => 'SIGNEDNESS',

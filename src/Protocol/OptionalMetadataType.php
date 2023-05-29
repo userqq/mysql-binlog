@@ -33,6 +33,7 @@ enum OptionalMetadataType: int
         9 => 'PRIMARY_KEY_WITH_PREFIX',
         10 => 'ENUM_AND_SET_DEFAULT_CHARSET',
         11 => 'ENUM_AND_SET_COLUMN_CHARSET',
+        12 => 'COLUMN_VISIBILITY',
     ];
 
     public static function fromString(string $name): static

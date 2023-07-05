@@ -61,10 +61,10 @@ final class EventsIterator implements IteratorAggregate
             EventLoop::unreference(EventLoop::repeat($this->config->statisticsInterval, $this->statisticsCollector->flush(...)));
         }
 
-        $this->include = (null !== $config->tables && count($config->tables))
-            || (null !== $config->databases && count($config->databases));
-        $this->exclude = (null !== $config->excludeTables && count($config->excludeTables))
-            || (null !== $config->excludeDatabases && count($config->excludeDatabases));
+        $this->include = (null !== $config->tables && \count($config->tables))
+            || (null !== $config->databases && \count($config->databases));
+        $this->exclude = (null !== $config->excludeTables && \count($config->excludeTables))
+            || (null !== $config->excludeDatabases && \count($config->excludeDatabases));
         $this->check = $this->include || $this->exclude;
     }
 
@@ -105,21 +105,21 @@ final class EventsIterator implements IteratorAggregate
         }
 
         if ($this->include) {
-            if (null !== $this->config->databases && !in_array($tableMap->schema, $this->config->databases, true)) {
+            if (null !== $this->config->databases && !\in_array($tableMap->schema, $this->config->databases, true)) {
                 return true;
             }
 
-            if (null !== $this->config->tables && !in_array("{$tableMap->schema}.{$tableMap->table}", $this->config->tables, true)) {
+            if (null !== $this->config->tables && !\in_array("{$tableMap->schema}.{$tableMap->table}", $this->config->tables, true)) {
                 return true;
             }
         }
 
         if ($this->exclude) {
-            if (null !== $this->config->excludeDatabases && in_array($tableMap->schema, $this->config->excludeDatabases, true)) {
+            if (null !== $this->config->excludeDatabases && \in_array($tableMap->schema, $this->config->excludeDatabases, true)) {
                 return true;
             }
 
-            if (null !== $this->config->excludeTables && in_array("{$tableMap->schema}.{$tableMap->table}", $this->config->excludeTables, true)) {
+            if (null !== $this->config->excludeTables && \in_array("{$tableMap->schema}.{$tableMap->table}", $this->config->excludeTables, true)) {
                 return true;
             }
         }
@@ -133,12 +133,12 @@ final class EventsIterator implements IteratorAggregate
         $event = null;
 
         if (null === $this->formatDescription && $header->type !== Type::FORMAT_DESCRIPTION_EVENT) {
-            throw new \UnexpectedValueException(sprintf('Expected to got FORMAT_DESCRIPTION_EVENT first, but got %s', var_export($header->type, true)));
+            throw new \UnexpectedValueException(\sprintf('Expected to got FORMAT_DESCRIPTION_EVENT first, but got %s', var_export($header->type, true)));
         }
 
         if ($header->type === Type::FORMAT_DESCRIPTION_EVENT) {
             $this->formatDescription = $this->readFormatDescriptionEvent($buffer, $header);
-            $this->logger->info(sprintf(
+            $this->logger->info(\sprintf(
                 '[EVENT][FORMAT_DESCRIPTION] server: %s, version: %d, checksum: %d',
                 $this->formatDescription->serverVersion,
                 $this->formatDescription->formatVersion,
@@ -165,7 +165,7 @@ final class EventsIterator implements IteratorAggregate
             case Type::ROTATE_EVENT:
                 $event = $this->readRotateEvent($buffer, $header);
                 if ($this->position->filename !== $event->filename || $this->position->position !== $event->position) {
-                    $this->logger->info(sprintf('[EVENT][ROTATE] %s:%d', $event->filename, $event->position));
+                    $this->logger->info(\sprintf('[EVENT][ROTATE] %s:%d', $event->filename, $event->position));
                 }
                 $this->tableMaps = [];
                 $this->rowFactory->dropTableMaps();
@@ -221,11 +221,11 @@ final class EventsIterator implements IteratorAggregate
                         break;
                     default:
                         /** @psalm-suppress TypeDoesNotContainType */
-                        assert(null !== $event);
+                        \assert(null !== $event);
                 }
 
-                assert($buffer->getLeft() === $header->checksumSize);
-                assert($header->checksumSize === 0 || strrev($buffer->read()) === hash('crc32b', substr((string) $buffer, 1, -1 * $header->checksumSize), true));
+                \assert($buffer->getLeft() === $header->checksumSize);
+                \assert($header->checksumSize === 0 || \strrev($buffer->read()) === \hash('crc32b', \substr((string) $buffer, 1, -1 * $header->checksumSize), true));
 
                 $this->statisticsCollector->pushEvent($event);
                 $this->position = $header->nextPosition;
@@ -236,8 +236,8 @@ final class EventsIterator implements IteratorAggregate
             return null;
         }
 
-        assert($buffer->getLeft() === $header->checksumSize);
-        assert($header->checksumSize === 0 || strrev($buffer->read()) === hash('crc32b', substr((string) $buffer, 1, -1 * $header->checksumSize), true));
+        \assert($buffer->getLeft() === $header->checksumSize);
+        \assert($header->checksumSize === 0 || \strrev($buffer->read()) === \hash('crc32b', \substr((string) $buffer, 1, -1 * $header->checksumSize), true));
 
         /** @psalm-suppress PossiblyNullArgument */
         $this->statisticsCollector->pushRowEvent($event);
@@ -351,7 +351,7 @@ final class EventsIterator implements IteratorAggregate
             $columnCount = $buffer->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
             $columnsBitmapAfter = $buffer->read(($columnCount + 7) >> 3),
-            count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap, $columnsBitmapAfter)),
+            \count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap, $columnsBitmapAfter)),
             $rows,
         );
     }
@@ -374,7 +374,7 @@ final class EventsIterator implements IteratorAggregate
             $columnCount = $buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
             $columnsBitmapAfter = $buffer->read(($columnCount + 7) >> 3),
-            count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap, $columnsBitmapAfter)),
+            \count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap, $columnsBitmapAfter)),
             $rows,
         );
     }
@@ -400,7 +400,7 @@ final class EventsIterator implements IteratorAggregate
             $buffer->readUint16(),
             $columnCount = $buffer->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
-            count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
+            \count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
             $rows,
         );
     }
@@ -422,7 +422,7 @@ final class EventsIterator implements IteratorAggregate
             $buffer->readUint16(),
             $columnCount = $buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
-            count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
+            \count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
             $rows,
         );
     }
@@ -444,7 +444,7 @@ final class EventsIterator implements IteratorAggregate
             $buffer->readUint16(),
             $columnCount = $buffer->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
-            count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
+            \count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
             $rows,
         );
     }
@@ -466,7 +466,7 @@ final class EventsIterator implements IteratorAggregate
             $buffer->readUint16(),
             $columnCount = $buffer->skip((int) ($buffer->readUInt16() / 8))->readCodedBinary(),
             $columnsBitmap = $buffer->read(($columnCount + 7) >> 3),
-            count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
+            \count($rows = $this->rowFactory->readRows($buffer, $header, $tableId, $columnCount, $columnsBitmap)),
             $rows,
         );
     }

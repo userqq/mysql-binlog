@@ -44,7 +44,7 @@ final class Connection implements IteratorAggregate
         private readonly LoggerInterface $logger,
         private readonly ?Cancellation   $cancellation = null,
     ) {
-        $this->socket = connect(sprintf('tcp://%s:%d', $this->config->host, $this->config->port), cancellation: $cancellation);
+        $this->socket = connect(\sprintf('tcp://%s:%d', $this->config->host, $this->config->port), cancellation: $cancellation);
 
         if (method_exists($this->socket, 'setChunkSize')) {
             $this->socket->setChunkSize(65536);
@@ -54,7 +54,7 @@ final class Connection implements IteratorAggregate
         $this->logger->debug('Connection established, starting handshake phase');
 
         $this->handleHandshake($this->readPacket());
-        $this->logger->info(sprintf(
+        $this->logger->info(\sprintf(
             'Connected to %s, protocol version: %d, connection id: %d, auth plugin: %s',
             $this->serverInfo->serverVersion,
             $this->serverInfo->protocolVersion,
@@ -62,19 +62,19 @@ final class Connection implements IteratorAggregate
             $this->serverInfo->authPluginName ?? 'NONE',
         ));
 
-        $this->execute(sprintf('SET NAMES "%s" COLLATE "%s"', $this->config->collation->getCharset(), $this->config->collation->toString()));
+        $this->execute(\sprintf('SET NAMES "%s" COLLATE "%s"', $this->config->collation->getCharset(), $this->config->collation->toString()));
         $this->validateServerConfiguration();
-        $this->logger->info(sprintf('Master status is %s', json_encode($this->execute('SHOW MASTER STATUS'))));
+        $this->logger->info(\sprintf('Master status is %s', json_encode($this->execute('SHOW MASTER STATUS'))));
 
         $this->binlogFile = $this->selectBinlogFile();
         $this->binlogPosition = $this->selectBinlogPosition();
-        $this->logger->info(sprintf('Selected binlog file is %s:%d', $this->binlogFile, $this->binlogPosition));
+        $this->logger->info(\sprintf('Selected binlog file is %s:%d', $this->binlogFile, $this->binlogPosition));
 
         if ('NONE' !== $this->query('SELECT @@global.binlog_checksum AS value')[0]) {
             $this->execute('SET @master_binlog_checksum = @@global.binlog_checksum');
         }
 
-        $this->execute(sprintf('SET @master_heartbeat_period = %f', $this->config->heartbeatPeriod * 1000000000));
+        $this->execute(\sprintf('SET @master_heartbeat_period = %f', $this->config->heartbeatPeriod * 1000000000));
     }
 
     public function getBinlogFile(): string
@@ -109,7 +109,7 @@ final class Connection implements IteratorAggregate
 
         if ($this->config->binlogFile) {
             if (!isset($binlogFiles[$this->config->binlogFile])) {
-                throw new \UnexpectedValueException(sprintf(
+                throw new \UnexpectedValueException(\sprintf(
                     'Binlog file %s is not found on server %s:%s',
                     $this->config->binlogFile,
                     $this->config->host,
@@ -117,8 +117,8 @@ final class Connection implements IteratorAggregate
                 ));
             }
             return $this->config->binlogFile;
-        } elseif (!count($binlogFiles)) {
-            throw new \UnexpectedValueException(sprintf(
+        } elseif (!\count($binlogFiles)) {
+            throw new \UnexpectedValueException(\sprintf(
                 'No binlog files were found on server %s:%s',
                 $this->config->host,
                 $this->config->port,
@@ -132,14 +132,14 @@ final class Connection implements IteratorAggregate
     {
         $binlogPosition = $this->config->binlogPosition ?? static::BINLOG_HEADER_SIZE;
 
-        $result = $this->execute(sprintf(
+        $result = $this->execute(\sprintf(
             'SHOW BINLOG EVENTS IN "%s" FROM %s LIMIT 1',
             addcslashes($this->binlogFile, '"'),
             $binlogPosition,
         ));
 
         $result[0]['Pos']
-            ?? throw new \RuntimeException(sprintf('No events found in %s:%d', $this->binlogFile, $binlogPosition));
+            ?? throw new \RuntimeException(\sprintf('No events found in %s:%d', $this->binlogFile, $binlogPosition));
 
         return static::BINLOG_HEADER_SIZE;
     }
@@ -152,9 +152,9 @@ final class Connection implements IteratorAggregate
             ->writeUInt32($this->config->slaveId)
             ->writeUint8(9)
             ->write('localhost')
-            ->writeUint8(strlen($this->config->user))
+            ->writeUint8(\strlen($this->config->user))
             ->write($this->config->user)
-            ->writeUint8(strlen($this->config->password))
+            ->writeUint8(\strlen($this->config->password))
             ->write($this->config->password)
             ->write($this->config->password)
             ->writeUInt16($this->config->port)
@@ -187,7 +187,7 @@ final class Connection implements IteratorAggregate
             throw new \RuntimeException('Unable to register slave');
         }
 
-        $this->logger->info(sprintf('Dumping binlog starting from %s:%d', $this->binlogFile, $this->binlogPosition));
+        $this->logger->info(\sprintf('Dumping binlog starting from %s:%d', $this->binlogFile, $this->binlogPosition));
     }
 
     public function getIterator(): Iterator
@@ -221,7 +221,7 @@ final class Connection implements IteratorAggregate
                     $warnings = $response[1]->readUint16();
                 }
 
-                $this->logger->info(sprintf(
+                $this->logger->info(\sprintf(
                     'Query OK "%s", affected: %d, insertId: %d, statusFlags: %d, warnings: %d',
                     $query,
                     $affected,
@@ -233,7 +233,7 @@ final class Connection implements IteratorAggregate
                 break;
 
             case Packet::EOF:
-                $this->logger->warning(sprintf('Query ERR "%s"', $query));
+                $this->logger->warning(\sprintf('Query ERR "%s"', $query));
                 return false;
                 break;
         }
@@ -279,7 +279,7 @@ final class Connection implements IteratorAggregate
         }, range(0, $columnCount - 1));
 
         if (Packet::EOF !== $this->read()[0]) {
-            $this->logger->warning(sprintf('Query ERR after columns read "%s"', $query));
+            $this->logger->warning(\sprintf('Query ERR after columns read "%s"', $query));
         }
 
         $result = [];
@@ -304,14 +304,14 @@ final class Connection implements IteratorAggregate
             }
         }
 
-        $this->logger->debug(sprintf('Query OK "%s", resulted %d row(s)', $query, count($result)));
+        $this->logger->debug(\sprintf('Query OK "%s", resulted %d row(s)', $query, \count($result)));
 
         return $result;
     }
 
     private function query(string $query): array
     {
-        return !is_array($result = $this->execute($query))
+        return !\is_array($result = $this->execute($query))
             ? []
             : $result;
     }
@@ -359,8 +359,8 @@ final class Connection implements IteratorAggregate
                 return '';
             }
 
-            $hash = sha1($this->config->password, true);
-            return $hash ^ sha1(\substr($this->serverInfo->authPluginData, 0, 20) . sha1($hash, true), true);
+            $hash = \sha1($this->config->password, true);
+            return $hash ^ \sha1(\substr($this->serverInfo->authPluginData, 0, 20) . \sha1($hash, true), true);
         })();
 
         $payload = (new Buffer)
@@ -369,7 +369,7 @@ final class Connection implements IteratorAggregate
             ->writeUint8(33)
             ->write("\0", 23)
             ->write($this->config->user . "\0")
-            ->writeUint8(strlen($auth))
+            ->writeUint8(\strlen($auth))
             ->write($auth);
 
         $this->sendPacket($payload);
@@ -423,7 +423,7 @@ final class Connection implements IteratorAggregate
                 if ($allowUnknownPacketTypes) {
                     return [$packet, $buffer->rewind()];
                 }
-                throw new \UnexpectedValueException(sprintf('Unknown type of packet "%s"', var_export($packet, true)));
+                throw new \UnexpectedValueException(\sprintf('Unknown type of packet "%s"', var_export($packet, true)));
                 break;
         }
 

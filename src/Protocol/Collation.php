@@ -1003,7 +1003,7 @@ enum Collation: int implements JsonSerializable
     public static function fromString(string $name): static
     {
         return static::tryFromString($name)
-            ?? throw new \InvalidArgumentException(\sprintf('Unknown charset: %s', $name));
+            ?? throw new \InvalidArgumentException(sprintf('Unknown charset: %s', $name));
     }
 
     public static function tryFromString(string $name): ?static
@@ -1029,7 +1029,7 @@ enum Collation: int implements JsonSerializable
             $data,
             'UTF-8',
             static::PHP_CHARSETS[$this->getCharset()]
-                ?? throw new \Exception(\sprintf('Charset %s is not defined yet', $this->toString())),
+                ?? throw new \Exception(sprintf('Charset %s is not defined yet', $this->toString())),
         );
     }
 }

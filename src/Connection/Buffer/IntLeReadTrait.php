@@ -81,7 +81,7 @@ trait IntLeReadTrait
 
         ++$this->offset;
 
-        \assert(((string) $value) === gmp_strval(gmp_import(\substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN)));
+        assert(((string) $value) === gmp_strval(gmp_import(substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN)));
 
         return $value;
     }

@@ -39,7 +39,7 @@ enum OptionalMetadataType: int
     public static function fromString(string $name): static
     {
         return static::tryFromString($name)
-            ?? throw new \InvalidArgumentException(\sprintf('Unknown optional metadata type: %s', $name));
+            ?? throw new \InvalidArgumentException(sprintf('Unknown optional metadata type: %s', $name));
     }
 
     public static function tryFromString(string $name): ?static

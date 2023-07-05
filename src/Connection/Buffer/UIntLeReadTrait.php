@@ -133,7 +133,7 @@ trait UIntLeReadTrait
         if ($value < 0) {
             $this->offset -= 8;
             /** @psalm-suppress UndefinedConstant */
-            $value = gmp_strval(gmp_import(\substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN));
+            $value = gmp_strval(gmp_import(substr($this->data, $this->offset, 8), 1, GMP_LSW_FIRST | GMP_LITTLE_ENDIAN));
             $this->offset += 8;
         }
 

@@ -150,10 +150,10 @@ final class ColumnMetadataFactory
                     break;
 
                 default:
-                    throw new UnexpectedValueException(\sprintf('Unknown optional medatada type %d', $type->value));
+                    throw new UnexpectedValueException(sprintf('Unknown optional medatada type %d', $type->value));
             }
 
-            \assert(0 === $sub->getLeft());
+            assert(0 === $sub->getLeft());
         }
 
         if (!isset($metadata[OptionalMetadataType::COLUMN_NAME->value])) {
@@ -179,7 +179,7 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         !(\ord($bitmap[$integerColumn >> 3]) & (1 << (7 - ($integerColumn & 0x07))))
                     );
                     ++$integerColumn;
@@ -192,7 +192,7 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
 
@@ -201,7 +201,7 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
 
@@ -214,7 +214,7 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
                     break;
 
@@ -224,10 +224,10 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]
                             ?? $metadata[OptionalMetadataType::COLUMN_CHARSET->value][$characterColumn]
-                                ?? throw new OutOfBoundsException(\sprintf('Expected to have collation at index %d, but got nothing', $characterColumn)),
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $characterColumn)),
                     );
                     ++$characterColumn;
                     break;
@@ -239,10 +239,10 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]
                             ?? $metadata[OptionalMetadataType::COLUMN_CHARSET->value][$characterColumn]
-                                ?? throw new OutOfBoundsException(\sprintf('Expected to have collation at index %d, but got nothing', $characterColumn)),
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $characterColumn)),
                     );
                     ++$characterColumn;
                     break;
@@ -253,12 +253,12 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]
                             ?? $metadata[OptionalMetadataType::ENUM_AND_SET_COLUMN_CHARSET->value][$enumSetColumn]
-                                ?? throw new OutOfBoundsException(\sprintf('Expected to have collation at index %d, but got nothing', $i)),
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::ENUM_STR_VALUE->value][$enumColumn]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have enum value index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have enum value index %d, but got nothing', $i)),
                     );
                     ++$enumColumn;
                     ++$enumSetColumn;
@@ -270,12 +270,12 @@ final class ColumnMetadataFactory
                         $i,
                         $column,
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]
                             ?? $metadata[OptionalMetadataType::ENUM_AND_SET_COLUMN_CHARSET->value][$enumSetColumn]
-                                ?? throw new OutOfBoundsException(\sprintf('Expected to have collation at index %d, but got nothing', $i)),
+                                ?? throw new OutOfBoundsException(sprintf('Expected to have collation at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::SET_STR_VALUE->value][$setColumn]
-                            ?? throw new OutOfBoundsException(\sprintf('Expected to have set value index %d, but got nothing', $i)),
+                            ?? throw new OutOfBoundsException(sprintf('Expected to have set value index %d, but got nothing', $i)),
                     );
                     ++$setColumn;
                     ++$enumSetColumn;
@@ -283,7 +283,7 @@ final class ColumnMetadataFactory
 
                 // TODO:! PRIMARY_KEY_WITH_PREFIX
                 default:
-                    throw new UnexpectedValueException(\sprintf('Unknown column type %s', var_export($column->type, true)));
+                    throw new UnexpectedValueException(sprintf('Unknown column type %s', var_export($column->type, true)));
             }
         }
 

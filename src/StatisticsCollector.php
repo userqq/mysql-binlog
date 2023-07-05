@@ -48,7 +48,7 @@ final class StatisticsCollector
     public function flush(): void
     {
         if ($this->bytes) {
-            $this->logger->notice(\sprintf(
+            $this->logger->notice(sprintf(
                 static::LOG_FORMAT,
                 $this->events,
                 $this->formatBytes($this->bytes),

@@ -27,7 +27,7 @@ final class Buffer
         private string $data = '',
                 int $length = null,
     ) {
-        $this->length = $length ??= \strlen($data);
+        $this->length = $length ??= strlen($data);
     }
 
     public function readCodedBinary(): ?int
@@ -51,7 +51,7 @@ final class Buffer
             return $this->readUInt24();
         }
 
-        throw new UnexpectedValueException(\sprintf('Not expected %dbit', $size));
+        throw new UnexpectedValueException(sprintf('Not expected %dbit', $size));
     }
 
     public function readUIntBySize(int $size): int
@@ -79,7 +79,7 @@ final class Buffer
                 return $this->readUInt56();
                 break;
             default:
-                throw new UnexpectedValueException(\sprintf('Not expected %dbit', $size));
+                throw new UnexpectedValueException(sprintf('Not expected %dbit', $size));
         }
     }
 
@@ -102,7 +102,7 @@ final class Buffer
                 return $this->readInt40Be();
                 break;
             default:
-                throw new UnexpectedValueException(\sprintf('Not expected %dbit', $size));
+                throw new UnexpectedValueException(sprintf('Not expected %dbit', $size));
         }
     }
 
@@ -113,10 +113,10 @@ final class Buffer
         }
 
         if (null === $length) {
-            $return = \substr($this->data, $this->offset);
+            $return = substr($this->data, $this->offset);
             $this->offset = $this->length;
         } else {
-            $return = \substr($this->data, $this->offset, $length);
+            $return = substr($this->data, $this->offset, $length);
             $this->offset += $length;
         }
 
@@ -126,7 +126,7 @@ final class Buffer
     public function readUntill(string $needle): string
     {
         $position = strpos($this->data, $needle, $this->offset);
-        $data = \substr($this->data, $this->offset, $position ? ($position - 1) : null);
+        $data = substr($this->data, $this->offset, $position ? ($position - 1) : null);
 
         $this->offset = $position ? ($position + 1) : $this->length;
 
@@ -170,7 +170,7 @@ final class Buffer
                 }
             }
 
-            $res .= \strrev($current_byte);
+            $res .= strrev($current_byte);
         }
 
         return $res;
@@ -191,7 +191,7 @@ final class Buffer
     public function write(string $value, int $repeat = 1): static
     {
         $this->data .= str_repeat($value, $repeat);
-        $this->length += \strlen($value) * $repeat;
+        $this->length += strlen($value) * $repeat;
 
         return $this;
     }
@@ -199,7 +199,7 @@ final class Buffer
     public function append(Buffer $buffer): static
     {
         $this->data .= $buffer->data;
-        $this->length = \strlen($this->data);
+        $this->length = strlen($this->data);
 
         return $this;
     }

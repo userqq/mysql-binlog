@@ -161,14 +161,14 @@ final class RowFactory
                                 break;
 
                             default:
-                                throw new UnexpectedValueException(\sprintf('Got column with unexpected data type %s', var_export($column, true)));
+                                throw new UnexpectedValueException(sprintf('Got column with unexpected data type %s', var_export($column, true)));
                         }
                     }
 
                     ++$nullIndex;
                 }
 
-                if ($columnsBitmapAfter && 1 === \count($rows[$j])) {
+                if ($columnsBitmapAfter && 1 === count($rows[$j])) {
                     $row = &$rows[$j]['after'];
                     $bitmap = $columnsBitmapAfter;
                     /** @psalm-suppress PossiblyUndefinedVariable */

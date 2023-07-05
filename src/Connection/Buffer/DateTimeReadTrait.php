@@ -13,7 +13,7 @@ trait DateTimeReadTrait
     {
         if (0 === $t = $this->readInt32Be()) {
             return '0000-00-00 00:00:00'
-                . ($fsp > 0 ? \sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
+                . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
         }
 
         $second = $t % 60;
@@ -39,7 +39,7 @@ trait DateTimeReadTrait
         }
 
         return \sprintf('%04d-%02d-%02d %02d:%02d:%02d', $c, $e, $f, $hour, $minute, $second)
-            . ($fsp > 0 ? \sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
+            . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
     }
 
     public function readDate(): string
@@ -48,7 +48,7 @@ trait DateTimeReadTrait
             return '0000-00-00';
         }
 
-        return \sprintf('%04d-%02d-%02d', ($value & ((1 << 15) - 1) << 9) >> 9, ($value & ((1 << 4) - 1) << 5) >> 5, ($value & ((1 << 5) - 1)));
+        return sprintf('%04d-%02d-%02d', ($value & ((1 << 15) - 1) << 9) >> 9, ($value & ((1 << 4) - 1) << 5) >> 5, ($value & ((1 << 5) - 1)));
     }
 
     public function readDateTime2(int $fsp): string
@@ -57,7 +57,7 @@ trait DateTimeReadTrait
             + (\ord($this->data[$this->offset + 1]) << 2)
             + ((\ord($this->data[$this->offset]) & 0x7f) << 10);
 
-        $value = \sprintf(
+        $value = sprintf(
             '%04d-%02d-%02d %02d:%02d:%02d',
             intdiv($yearMonth, 13),
             $yearMonth % 13,
@@ -69,12 +69,12 @@ trait DateTimeReadTrait
 
         $this->offset += 5;
 
-        return $value . ($fsp > 0 ? \sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
+        return $value . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
     }
 
     public function readTime2(int $fsp): string
     {
-        $value = \sprintf(
+        $value = sprintf(
             '%02d:%02d:%02d',
             ((\ord($this->data[$this->offset + 1]) & 0xf0) >> 4) + ((\ord($this->data[$this->offset]) & 0x01) << 4),
             (\ord($this->data[$this->offset + 2]) >> 6) + ((\ord($this->data[$this->offset + 1]) & 0x0f) << 2),
@@ -83,6 +83,6 @@ trait DateTimeReadTrait
 
         $this->offset += 3;
 
-        return $value . ($fsp > 0 ? \sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
+        return $value . ($fsp > 0 ? sprintf('.%-03.3s', $this->readIntBeBySize(($fsp + 1) >> 1)) : '');
     }
 }

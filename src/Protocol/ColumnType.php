@@ -77,7 +77,7 @@ enum ColumnType: int implements JsonSerializable
     public static function fromString(string $name): static
     {
         return static::tryFromString($name)
-            ?? throw new \InvalidArgumentException(\sprintf('Unknown column type: %s', $name));
+            ?? throw new \InvalidArgumentException(sprintf('Unknown column type: %s', $name));
     }
 
     public static function tryFromString(string $name): ?static

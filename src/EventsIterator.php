@@ -7,6 +7,7 @@ namespace UserQQ\MySQL\Binlog;
 use Iterator;
 use IteratorAggregate;
 use SysvMessageQueue;
+use RuntimeException;
 use Amp\Cancellation;
 use Amp\CancelledException;
 use Psr\Log\LoggerInterface;
@@ -175,6 +176,19 @@ final class EventsIterator implements IteratorAggregate
                 json_encode($header->nextPositionShort),
             ),
         );
+
+        if (
+            !(
+                $header->nextPosition->position === $header->nextPositionShort->position
+                    || ($header->nextPosition->position % 4294967296) === $header->nextPositionShort->position
+            )
+        ) {
+            throw new RuntimeException(sprintf(
+                'Next event position missmatch, expected to have %s (or with equal offset) but got %s',
+                json_encode($header->nextPosition),
+                json_encode($header->nextPositionShort),
+            ));
+        }
 
         if ($header->type === Type::TABLE_MAP_EVENT) {
             $event = $this->readTableMapEvent($buffer, $header);

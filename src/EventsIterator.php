@@ -175,16 +175,6 @@ final class EventsIterator implements IteratorAggregate
                 json_encode($header->nextPositionShort),
             ),
         );
-        /****/
-        if (
-            $header->nextPosition->position !== $header->nextPositionShort->position
-                && ($header->nextPosition->position % 4294967296) !== $header->nextPositionShort->position
-        ) {
-            throw new \Exception(json_encode($header->nextPosition) . json_encode($header->nextPositionShort));
-        }
-        echo sprintf('%\' 15d ', $header->nextPosition->position) . json_encode($header->nextPositionShort) . PHP_EOL;
-        return null;
-        /****/
 
         if ($header->type === Type::TABLE_MAP_EVENT) {
             $event = $this->readTableMapEvent($buffer, $header);

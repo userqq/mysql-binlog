@@ -39,6 +39,7 @@ final class EventsIterator implements IteratorAggregate
     private          array                     $tableMaps = [];
 
     private          BinlogPosition            $position;
+    private          int                       $nextOffset;
 
     private readonly bool                      $include;
     private readonly bool                      $exclude;
@@ -55,7 +56,7 @@ final class EventsIterator implements IteratorAggregate
 
         $this->statisticsCollector = new StatisticsCollector($logger);
 
-        $this->position = new BinlogPosition($this->connection->getBinlogFile(), $this->connection->getBinlogPosition());
+        $this->position = new BinlogPosition($this->connection->getBinlogFile(), $this->nextOffset = $this->connection->getBinlogPosition());
 
         if (null !== $this->config->statisticsInterval) {
             EventLoop::unreference(EventLoop::repeat($this->config->statisticsInterval, $this->statisticsCollector->flush(...)));
@@ -153,26 +154,45 @@ final class EventsIterator implements IteratorAggregate
             return null;
         }
 
-        switch ($header->type) {
-            case Type::TABLE_MAP_EVENT:
-                $event = $this->readTableMapEvent($buffer, $header);
-                $this->tableMaps[$event->tableId] = $event;
-                $this->rowFactory->addTableMap($event);
-                $this->statisticsCollector->pushEvent($event);
-                $this->position = $header->nextPosition;
-                return null;
-                break;
-            case Type::ROTATE_EVENT:
-                $event = $this->readRotateEvent($buffer, $header);
-                if ($this->position->filename !== $event->filename || $this->position->position !== $event->position) {
-                    $this->logger->info(\sprintf('[EVENT][ROTATE] %s:%d', $event->filename, $event->position));
-                }
-                $this->tableMaps = [];
-                $this->rowFactory->dropTableMaps();
-                $this->statisticsCollector->pushEvent($event);
-                $this->position = new BinlogPosition($event->filename, $event->position);
-                return null;
-                break;
+        if ($header->type === Type::ROTATE_EVENT) {
+            $event = $this->readRotateEvent($buffer, $header);
+            if ($this->position->filename !== $event->filename || $this->position->position !== $event->position) {
+                $this->logger->info(\sprintf('[EVENT][ROTATE] %s:%d', $event->filename, $event->position));
+            }
+            $this->tableMaps = [];
+            $this->rowFactory->dropTableMaps();
+            $this->statisticsCollector->pushEvent($event);
+            $this->position = new BinlogPosition($event->filename, $this->nextOffset = $event->position);
+            return null;
+        }
+
+        assert(
+            $header->nextPosition->position === $header->nextPositionShort->position
+                || ($header->nextPosition->position % 4294967296) === $header->nextPositionShort->position,
+            sprintf(
+                'Next event position %s is not equal to event header value %s',
+                json_encode($header->nextPosition),
+                json_encode($header->nextPositionShort),
+            ),
+        );
+        /****/
+        if (
+            $header->nextPosition->position !== $header->nextPositionShort->position
+                && ($header->nextPosition->position % 4294967296) !== $header->nextPositionShort->position
+        ) {
+            throw new \Exception(json_encode($header->nextPosition) . json_encode($header->nextPositionShort));
+        }
+        echo sprintf('%\' 15d ', $header->nextPosition->position) . json_encode($header->nextPositionShort) . PHP_EOL;
+        return null;
+        /****/
+
+        if ($header->type === Type::TABLE_MAP_EVENT) {
+            $event = $this->readTableMapEvent($buffer, $header);
+            $this->tableMaps[$event->tableId] = $event;
+            $this->rowFactory->addTableMap($event);
+            $this->statisticsCollector->pushEvent($event);
+            $this->position = $header->nextPosition;
+            return null;
         }
 
         if (
@@ -254,11 +274,11 @@ final class EventsIterator implements IteratorAggregate
         return new Header(
             $this->position,
             $buffer->readUInt32(),
-            Type::from($buffer->readUInt8()),
+            $type = Type::from($buffer->readUInt8()),
             $buffer->readUInt32(),
             $eventSize = $buffer->readUInt32(),
             new BinlogPosition($this->position->filename, $buffer->readUInt32()),
-            new BinlogPosition($this->position->filename, $this->connection->getBinlogPosition()),
+            new BinlogPosition($this->position->filename, $type === Type::HEARTBEAT_EVENT ? $this->nextOffset : $this->nextOffset += $eventSize),
             $buffer->readUInt16(),
             $checksumSize = ($this->formatDescription?->checksumAlgorithmType > 0) ? 4 : 0,
             ($eventSize + 1 /* Packet type header*/) - $checksumSize,

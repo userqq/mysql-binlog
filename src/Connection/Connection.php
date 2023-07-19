@@ -36,7 +36,7 @@ final class Connection implements IteratorAggregate
     private          ServerInfo     $serverInfo;
     private          int            $seqId = -1;
     private readonly string         $binlogFile;
-    private          int            $binlogPosition;
+    private readonly int            $binlogPosition;
     private readonly ?string        $cancellationId;
 
     public function __construct(
@@ -200,7 +200,6 @@ final class Connection implements IteratorAggregate
                 continue;
             }
 
-            $this->binlogPosition += $buffer->getLeft();
             yield $buffer;
         }
     }

@@ -258,6 +258,7 @@ final class EventsIterator implements IteratorAggregate
             $buffer->readUInt32(),
             $eventSize = $buffer->readUInt32(),
             new BinlogPosition($this->position->filename, $buffer->readUInt32()),
+            new BinlogPosition($this->position->filename, $this->connection->getBinlogPosition()),
             $buffer->readUInt16(),
             $checksumSize = ($this->formatDescription?->checksumAlgorithmType > 0) ? 4 : 0,
             ($eventSize + 1 /* Packet type header*/) - $checksumSize,

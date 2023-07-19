@@ -15,6 +15,7 @@ final class Header implements JsonSerializable
         public readonly Type           $type,
         public readonly int            $serverId,
         public readonly int            $eventSize,
+        public readonly BinlogPosition $nextPositionShort,
         public readonly BinlogPosition $nextPosition,
         public readonly int            $flags,
         public readonly int            $checksumSize,

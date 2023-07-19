@@ -170,10 +170,10 @@ final class EventsIterator implements IteratorAggregate
         assert(
             $header->nextPosition->position === $header->nextPositionShort->position
                 || ($header->nextPosition->position % 4294967296) === $header->nextPositionShort->position,
-            sprintf(
+            \sprintf(
                 'Next event position %s is not equal to event header value %s',
-                json_encode($header->nextPosition),
-                json_encode($header->nextPositionShort),
+                \json_encode($header->nextPosition),
+                \json_encode($header->nextPositionShort),
             ),
         );
 
@@ -183,10 +183,10 @@ final class EventsIterator implements IteratorAggregate
                     || ($header->nextPosition->position % 4294967296) === $header->nextPositionShort->position
             )
         ) {
-            throw new RuntimeException(sprintf(
+            throw new RuntimeException(\sprintf(
                 'Next event position missmatch, expected to have %s (or with equal offset) but got %s',
-                json_encode($header->nextPosition),
-                json_encode($header->nextPositionShort),
+                \json_encode($header->nextPosition),
+                \json_encode($header->nextPositionShort),
             ));
         }
 

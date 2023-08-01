@@ -88,8 +88,8 @@ final class StatisticsCollector
     {
         $this->rows += $event->count;
 
-        $this->tables[$event->tableMap->table . '.' . $event->tableMap->table] ??= 0;
-        $this->tables[$event->tableMap->table . '.' . $event->tableMap->table] += $event->count;
+        $this->tables[$event->tableMap->schema . '.' . $event->tableMap->table] ??= 0;
+        $this->tables[$event->tableMap->schema . '.' . $event->tableMap->table] += $event->count;
 
         $this->pushEvent($event);
     }

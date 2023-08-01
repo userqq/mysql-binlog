@@ -12,12 +12,13 @@ use UserQQ\MySQL\Binlog\Protocol\Event\RowEvent;
 
 final class StatisticsCollector
 {
-    private const LOG_FORMAT = '| %\' 6d %\' 9s %\' 10s %\' 8.2fms (%\' 10s)  %s';
+    private const LOG_FORMAT = '| %\' 6d %\' 9s %\' 10s %\' 8.2fms (%\' 10s)  %s %s';
 
-    private int   $events;
-    private int   $bytes;
-    private int   $rows;
-    private array $tables;
+    private int             $events;
+    private int             $bytes;
+    private int             $rows;
+    private array           $tables;
+    private ?BinlogPosition $position;
 
     private float $start;
 
@@ -33,6 +34,7 @@ final class StatisticsCollector
         $this->bytes = 0;
         $this->rows = 0;
         $this->tables = [];
+        $this->position = null;
 
         $this->start = microtime(true);
     }
@@ -55,6 +57,7 @@ final class StatisticsCollector
                 number_format($this->rows),
                 (microtime(true) - $this->start) * 1000,
                 $this->formatBytes(memory_get_usage()),
+                json_encode($this->position),
                 json_encode($this->tables),
             ));
         }
@@ -65,6 +68,7 @@ final class StatisticsCollector
     public function pushHeader(Header $header): void
     {
         $this->bytes += ($header->payloadSize + $header->checksumSize);
+        $this->position = $header->position;
     }
 
     /**
@@ -84,8 +88,8 @@ final class StatisticsCollector
     {
         $this->rows += $event->count;
 
-        $this->tables[$event->tableMap->table] ??= 0;
-        $this->tables[$event->tableMap->table] += $event->count;
+        $this->tables[$event->tableMap->table . '.' . $event->tableMap->table] ??= 0;
+        $this->tables[$event->tableMap->table . '.' . $event->tableMap->table] += $event->count;
 
         $this->pushEvent($event);
     }

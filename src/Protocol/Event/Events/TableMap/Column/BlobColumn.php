@@ -12,7 +12,6 @@ final class BlobColumn implements Column
     public function __construct(
         public readonly int       $index,
         public readonly Meta      $meta,
-        public readonly bool      $isNullable,
         public readonly string    $name,
         public readonly Collation $charset,
     ) {}

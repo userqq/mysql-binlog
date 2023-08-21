@@ -88,7 +88,7 @@ final class ColumnMetadataFactory
      *
      * @param array<int, Meta\SizedMeta|Meta\TimeMeta|Meta\TextMeta|Meta\DecimalMeta|Meta\BlobMeta|Meta\BitMeta|Meta\CommonMeta> $columns
      */
-    public function readOptionalMetadata(Buffer $buffer, Header $header, int $columnCount, array $columns, string $nullableBitField): array
+    public function readOptionalMetadata(Buffer $buffer, Header $header, int $columnCount, array $columns): array
     {
         $metadata = [];
         while ($header->payloadSize > $buffer->getOffset()) {
@@ -178,7 +178,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\IntegerColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         !(\ord($bitmap[$integerColumn >> 3]) & (1 << (7 - ($integerColumn & 0x07))))
@@ -192,7 +191,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\FloatColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
@@ -202,7 +200,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\DecimalColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
@@ -216,7 +213,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\TimeColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                     );
@@ -227,7 +223,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\BlobColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]
@@ -243,7 +238,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\TextColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::DEFAULT_CHARSET->value]
@@ -258,7 +252,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\EnumColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]
@@ -276,7 +269,6 @@ final class ColumnMetadataFactory
                     $columns[$i] = new Column\EnumColumn(
                         $i,
                         $column,
-                        (bool) (\ord($nullableBitField[$i >> 3]) & (1 << ($i & 0x07))),
                         $metadata[OptionalMetadataType::COLUMN_NAME->value][$i]
                             ?? throw new OutOfBoundsException(\sprintf('Expected to have column name at index %d, but got nothing', $i)),
                         $metadata[OptionalMetadataType::ENUM_AND_SET_DEFAULT_CHARSET->value]

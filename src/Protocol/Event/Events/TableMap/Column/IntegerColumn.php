@@ -11,7 +11,6 @@ final class IntegerColumn implements Column
     public function __construct(
         public readonly int    $index,
         public readonly Meta   $meta,
-        public readonly bool   $isNullable,
         public readonly string $name,
         public readonly bool   $isSigned,
     ) {}

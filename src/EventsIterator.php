@@ -299,7 +299,7 @@ final class EventsIterator implements IteratorAggregate
         /** @psalm-suppress PossiblyNullArgument */
         $columns = $this->columnsMetadataFactory->readColumns($buffer, $columnCount);
         $nullableBitField = $buffer->read(($columnCount + 7) >> 3);
-        [$columns, $primaryKeyColumns] = $this->columnsMetadataFactory->readOptionalMetadata($buffer, $header, $columnCount, $columns, $nullableBitField);
+        [$columns, $primaryKeyColumns] = $this->columnsMetadataFactory->readOptionalMetadata($buffer, $header, $columnCount, $columns);
 
         return new Events\TableMap(
             $header,

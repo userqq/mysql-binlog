@@ -155,6 +155,11 @@ final class EventsIterator implements IteratorAggregate
             return null;
         }
 
+        if ($header->type === Type::ANNOTATE_ROWS_EVENT) {
+            $this->logger->debug('[EVENT][ANNOTATE_ROWS_EVENT]');
+            return null;
+        }
+
         if ($header->type === Type::ROTATE_EVENT) {
             $event = $this->readRotateEvent($buffer, $header);
             if ($this->position->filename !== $event->filename || $this->position->position !== $event->position) {

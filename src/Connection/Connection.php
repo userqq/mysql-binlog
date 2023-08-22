@@ -22,19 +22,21 @@ use function Amp\Socket\connect;
  */
 final class Connection implements IteratorAggregate
 {
-    private const SOCKET_BUFFER_SIZE = 65536;
+    private const SOCKET_BUFFER_SIZE              = 65536;
 
-    private const COM_REGISTER_SLAVE = 0x15;
-    private const COM_BINLOG_DUMP    = 0x12;
+    private const COM_REGISTER_SLAVE              = 0x15;
+    private const COM_BINLOG_DUMP                 = 0x12;
 
-    private const BINLOG_HEADER_SIZE = 4;
+    private const BINLOG_HEADER_SIZE              = 4;
+    private const BINLOG_SEND_ANNOTATE_ROWS_EVENT = 2;
 
-    private const MAX_PACKET_SIZE    = 0xffffff;
+    private const MAX_PACKET_SIZE                 = 0xffffff;
 
     private readonly Socket         $socket;
     private readonly BufferedReader $reader;
     private          ServerInfo     $serverInfo;
     private          int            $seqId = -1;
+    private          int            $flags = 0;
     private readonly string         $binlogFile;
     private readonly int            $binlogPosition;
     private readonly ?string        $cancellationId;
@@ -70,16 +72,21 @@ final class Connection implements IteratorAggregate
         $this->binlogPosition = $this->selectBinlogPosition();
         $this->logger->info(\sprintf('Selected binlog file is %s:%d', $this->binlogFile, $this->binlogPosition));
 
-        if ('NONE' !== $this->query('SELECT @@global.binlog_checksum AS value')[0]) {
+        if ('NONE' !== $this->query('SELECT @@global.binlog_checksum AS value')[0]['value']) {
             $this->execute('SET @master_binlog_checksum = @@global.binlog_checksum');
         }
 
-        $this->execute(\sprintf('SET @master_heartbeat_period = %f', $this->config->heartbeatPeriod * 1000000000));
+        if (str_contains($this->serverInfo->serverVersion, 'MariaDB')) {
+            $this->execute('SET @mariadb_slave_capability=4');
+            $this->execute('SET @slave_gtid_strict_mode=0');
+            $this->execute('SET @slave_gtid_ignore_duplicates=0');
 
-        /** https://jira.mariadb.org/browse/CONC-650 **/
-        // $this->execute('SET @mariadb_slave_capability = 4');
-        $this->execute('SET @slave_gtid_strict_mode = 1');
-        $this->execute('SET @slave_gtid_ignore_duplicates = 1');
+            if ('1' === $this->query('SELECT @@global.binlog_annotate_row_events AS value')[0]['value']) {
+                $this->flags |= static::BINLOG_SEND_ANNOTATE_ROWS_EVENT;
+            }
+        }
+
+        $this->execute(\sprintf('SET @master_heartbeat_period = %f', $this->config->heartbeatPeriod * 1000000000));
     }
 
     public function getBinlogFile(): string
@@ -182,7 +189,7 @@ final class Connection implements IteratorAggregate
         $payload = (new Buffer)
             ->writeUint8(static::COM_BINLOG_DUMP)
             ->writeUint32($this->binlogPosition)
-            ->writeUInt16(0)
+            ->writeUInt16($this->flags)
             ->writeUInt32($this->config->slaveId)
             ->write($this->binlogFile);
 

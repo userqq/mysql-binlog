@@ -55,6 +55,7 @@ enum Type: int implements JsonSerializable
     case MARIA_WRITE_ROWS_COMPRESSED_EVENT     = 0xa9;
     case MARIA_UPDATE_ROWS_COMPRESSED_EVENT    = 0xaa;
     case MARIA_DELETE_ROWS_COMPRESSED_EVENT    = 0xab;
+    case ANNOTATE_ROWS_EVENT                   = 0xa0;
 
     private const CASES = [
         0x00 => 'UNKNOWN_EVENT',

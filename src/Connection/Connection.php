@@ -75,6 +75,11 @@ final class Connection implements IteratorAggregate
         }
 
         $this->execute(\sprintf('SET @master_heartbeat_period = %f', $this->config->heartbeatPeriod * 1000000000));
+
+        /** https://jira.mariadb.org/browse/CONC-650 **/
+        // $this->execute('SET @mariadb_slave_capability = 4');
+        $this->execute('SET @slave_gtid_strict_mode = 1');
+        $this->execute('SET @slave_gtid_ignore_duplicates = 1');
     }
 
     public function getBinlogFile(): string

@@ -6,7 +6,7 @@ namespace UserQQ\MySQL\Binlog\Protocol;
 
 use JsonSerializable;
 
-enum OptionalMetadataType: int
+enum OptionalMetadataType: int implements JsonSerializable
 {
     case SIGNEDNESS                   = 1;
     case DEFAULT_CHARSET              = 2;

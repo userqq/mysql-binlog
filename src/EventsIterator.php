@@ -248,6 +248,7 @@ final class EventsIterator implements IteratorAggregate
                     case Type::MARIA_BINLOG_CHECKPOINT_EVENT:
                     case Type::MARIA_GTID_EVENT:
                     case Type::MARIA_GTID_LIST_EVENT:
+                    case Type::INTVAR_EVENT:
                         $this->position = $header->nextPosition;
                         return null;
                         break;

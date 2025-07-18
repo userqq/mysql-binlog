@@ -19,6 +19,7 @@ final class Buffer
     public const UNSIGNED_CHAR_COLUMN  = 251;
     public const UNSIGNED_SHORT_COLUMN = 252;
     public const UNSIGNED_INT24_COLUMN = 253;
+    public const UNSIGNED_INT64_COLUMN = 254;
 
     private int $offset = 0;
     private int $length;
@@ -49,6 +50,10 @@ final class Buffer
 
         if ($size === self::UNSIGNED_INT24_COLUMN) {
             return $this->readUInt24();
+        }
+
+        if ($size === self::UNSIGNED_INT64_COLUMN) {
+            return $this->readUInt64();
         }
 
         throw new UnexpectedValueException(\sprintf('Not expected %dbit', $size));
